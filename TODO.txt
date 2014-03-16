@@ -1,0 +1,8 @@
+JModelica kann FMUs als co-simulation exportieren.
+
+
+relevante Software für FMI:
+
+PyFMI, benötigt leider assimulo
+
+
