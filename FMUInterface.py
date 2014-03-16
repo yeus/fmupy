@@ -45,8 +45,8 @@ from FMIDescription import FMIDescription
 ''' Declaration of file-type correspondents between Modelica/C and Python
     The mapping is done according to file: fmiModelTypes.h
 '''
-fmiFalse                 = '\x00'
-fmiTrue                  = '\x01'
+fmiFalse                 = '\x00'.encode('utf-8')
+fmiTrue                  = '\x01'.encode('utf-8')
 fmiReal                  = ctypes.c_double
 fmiInteger               = ctypes.c_int
 fmiBoolean               = ctypes.c_char
@@ -208,7 +208,13 @@ class FMUInterface:
         InstantiateModel = getattr(self._library, self.description.modelIdentifier + '_fmiInstantiateModel')
         InstantiateModel.argtypes = [fmiString, fmiString, _fmiCallbackFunctions, fmiBoolean]
         InstantiateModel.restype = fmiComponent
-        self._modelInstancePtr = InstantiateModel(self.instanceID, self.description.guid, self._fmiCallbackFunctions, fmiTrue if self._loggingOn else fmiFalse)
+        try:
+          self._modelInstancePtr = InstantiateModel(self.instanceID.encode('utf-8'), self.description.guid.encode('utf-8'), self._fmiCallbackFunctions, fmiTrue if self._loggingOn else fmiFalse)
+        except:
+          print(self.instanceID, type(self.instanceID),"\n\n")
+          print(self.description.guid, type(self.description.guid),"\n\n")
+          raise
+        
         if self._modelInstancePtr == None:
             raise FMUError.FMUError('Instantiation of FMU failed.\n')
 

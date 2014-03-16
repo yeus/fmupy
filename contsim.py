@@ -17,11 +17,12 @@
 import FMUInterface
 
 #keine co-simulation
-FMUInterface.FMUInterface("./modelicatests_efunc.fmu")
+interface=FMUInterface.FMUInterface("./efunc.fmu")
 
 
 #initialisation:
-x0 = self.interface.fmiGetContinuousStates()
+x0 = interface.fmiGetContinuousStates()
 
+print(x0)
 #simulation loop:
 
