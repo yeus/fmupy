@@ -400,7 +400,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
                 else:
                     values = numpy.ndarray((1,))
                 if category == series.independentVariableCategory:
-                    # There is a time
+                    # There is a timeum
                     index = category.independentVariableColumn
                     values[index] = time
                 category.writeData(values)
@@ -602,7 +602,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
         else:
             simulator = ExplicitEulerSolver()            
 
-        #TODO: wird hier der siulator mit Callback Funktionen ausgestattet?
+        #TODO: wird hier der siulator mit Callback Funktionen ausgestattet? -->  ja :)
         simulator.t0 = Tstart            
         simulator.y0 = x0
         
@@ -617,7 +617,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
 
         # Store information about next time event in solver
         simulator.nextTimeEvent = nextTimeEvent
-       
+       FMIfalse
         print(("Start integration of " + self.numberedModelName + " ... "))
 
         # Simulate until end of integration interval        
