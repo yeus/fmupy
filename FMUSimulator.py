@@ -108,7 +108,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
     def close(self):
         ''' Closing the model, release of resources
         '''
-        print "Deleting model instance ", self.description.modelName
+        print("Deleting model instance ", self.description.modelName)
         self.interface.free()
 
     def _setDefaultStartValues(self):
@@ -172,7 +172,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
         ''' Returns the values of the variables given in name;
             name is either a String or a list of Strings.            
         '''
-        if types.TypeType(name) == types.ListType:
+        if types.TypeType(name) == list:
             n = len(name)
             nameList = True
             names = name
@@ -205,38 +205,38 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
                 iString.append(i)
 
         #TODO: hier werden Werte für bestimmte Variablen abgerufen.
-        retValue = range(n)
+        retValue = list(range(n))
         k = len(refReal)
         if k > 0:
             ref = FMUInterface.createfmiReferenceVector(k)
-            for i in xrange(k):
+            for i in range(k):
                 ref[i] = refReal[i]
             values = self.interface.fmiGetReal(ref)
-            for i in xrange(k):
+            for i in range(k):
                 retValue[iReal[i]] = values[i]
         k = len(refInteger)
         if k > 0:
             ref = FMUInterface.createfmiReferenceVector(k)
-            for i in xrange(k):
+            for i in range(k):
                 ref[i] = refInteger[i]
             values = self.interface.fmiGetInteger(ref)
-            for i in xrange(k):
+            for i in range(k):
                 retValue[iInteger[i]] = values[i]
         k = len(refBoolean)
         if k > 0:
             ref = FMUInterface.createfmiReferenceVector(k)
-            for i in xrange(k):
+            for i in range(k):
                 ref[i] = refBoolean[i]
             values = self.interface.fmiGetBoolean(ref)
-            for i in xrange(k):
+            for i in range(k):
                 retValue[iBoolean[i]] = values[i]
         k = len(refString)
         if k > 0:
             ref = FMUInterface.createfmiReferenceVector(k)
-            for i in xrange(k):
+            for i in range(k):
                 ref[i] = refString[i]
             values = self.interface.fmiGetString(ref)
-            for i in xrange(k):
+            for i in range(k):
                 retValue[iString[i]] = values[i]
 
         if nameList:
@@ -253,7 +253,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
         ''' Returns a list of Strings: the names of all states in the model.
         '''
         references = self.interface.fmiGetStateValueReferences()
-        allVars = self.description.scalarVariables.items()
+        allVars = list(self.description.scalarVariables.items())
         referenceListSorted = [(index, var[1].valueReference) for index, var in enumerate(allVars)]
         referenceListSorted.sort(key=itemgetter(1))
         referenceList = [r[1] for r in referenceListSorted]
@@ -293,7 +293,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
         self.interface.fmiSetTime(t)
         # Set start values
         self._setDefaultStartValues()
-        for name in self.changedStartValue.keys():
+        for name in list(self.changedStartValue.keys()):
             self.setValue(name, self.changedStartValue[name])
         # Initialize model
         (eventInfo, status) = self.interface.fmiInitialize(fmiTrue, errorTolerance)
@@ -340,13 +340,13 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
             mtsf = Mtsf.MTSF(settings.resultFileName,
                                modelDescription, modelVariables, experimentSetup, simpleTypes, units, enumerations)
             if not mtsf.isAvailable:
-                print("Result file " + settings.resultFileName + " cannot be opened for write access.\n")
+                print(("Result file " + settings.resultFileName + " cannot be opened for write access.\n"))
                 self.integrationResults = Plugins.SimulationResult.IntegrationResults.Results()
                 return False
 
             # Create fmi reference lists in categories
-            for series in mtsf._mtsf.results.series.values():
-                for category in series.category.values():
+            for series in list(mtsf._mtsf.results.series.values()):
+                for category in list(series.category.values()):
                     category.references = FMUInterface.createfmiReferenceVector(category.nColumn)
                     category.iReferences = -1
                     dataType = pyMtsf.CategoryReverseMapping[category.name]
@@ -358,7 +358,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
                         category.fmiGetValues = self.interface.fmiGetBoolean
                     elif dataType == 'String':
                         category.fmiGetValues = self.interface.fmiGetString
-            for name, variable in modelVariables.variable.items():
+            for name, variable in list(modelVariables.variable.items()):
                 if variable.aliasName is None:
                     variable.category.iReferences += 1
                     if name in fmi.scalarVariables:
@@ -371,7 +371,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
                         variable.category.independentVariableColumn = variable.columnIndex
                         variable.category.references[variable.category.iReferences] = 0
 
-            for series in mtsf._mtsf.results.series.values():
+            for series in list(mtsf._mtsf.results.series.values()):
                 if hasattr(series, 'independentVariableCategory'):
                     category = series.independentVariableCategory
                     column = category.independentVariableColumn
@@ -394,7 +394,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
             '''
             self.integrationResultFileSemaphore.acquire()
             series = self.integrationResults._mtsf.results.series[seriesName]
-            for category in series.category.values():
+            for category in list(series.category.values()):
                 if category.references.shape[0] > 0:
                     values = category.fmiGetValues(category.references)
                 else:
@@ -433,7 +433,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
             # Check, if simulation shall be interrupted
             if self.simulationStopRequest:
                 finalize()#TODO: fmi terminate??
-                raise(Plugins.Simulator.SimulatorBase.Stopping)
+                raise Plugins
 
             # Update integration statistics
             self.integrationStatistics.reachedTime = t
@@ -554,7 +554,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
         #TODO:  hier wird das Modell initialisiert
         (status, nextTimeEvent) = self.initialize(Tstart, ErrorTolerance)
         if status > 1:
-            print("Model initialization failed. fmiStatus = " + str(status))
+            print(("Model initialization failed. fmiStatus = " + str(status)))
             return
         
         if 'Fixed' in self.integrationResults._mtsf.results.series:
@@ -618,7 +618,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
         # Store information about next time event in solver
         simulator.nextTimeEvent = nextTimeEvent
        
-        print("Start integration of " + self.numberedModelName + " ... ")
+        print(("Start integration of " + self.numberedModelName + " ... "))
 
         # Simulate until end of integration interval        
         if "Euler" in IntegrationMethod:
@@ -664,7 +664,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
         # ----> Here the rootAttribute of self.variableTree is set
         self.variableTree.rootAttribute = tipText
 
-        for vName, v in self.description.scalarVariables.iteritems():
+        for vName, v in self.description.scalarVariables.items():
             variableAttribute = ''
             if v.description is not None:
                 variableAttribute += 'Description:' + chr(9) + v.description + '\n'
@@ -726,7 +726,7 @@ class ExplicitEulerSolver():
         z = self.state_events(self.t_cur, self.y_cur)
         zb = numpy.empty(len(z))
         zb_new = zb.copy()
-        for i in xrange(len(z)):
+        for i in range(len(z)):
             zb[i] = (z[i] > 0.0)
         nextTimeEvent = self.time_events(self.t_cur, self.y_cur)
         # Write initial values to results
@@ -769,7 +769,7 @@ class ExplicitEulerSolver():
 
             # Check for state events
             z = self.state_events(self.t_cur, self.y_cur)
-            for i in xrange(len(z)):
+            for i in range(len(z)):
                 zb_new[i] = (z[i] > 0.0)
             state_event = (zb_new != zb)
             temp = zb
@@ -796,7 +796,7 @@ class ExplicitEulerSolver():
                 if not self.handle_event(self, event_info):
                     break                
                 z = self.state_events(self.t_cur, self.y_cur)
-                for i in xrange(len(z)):
+                for i in range(len(z)):
                     zb[i] = (z[i] > 0.0)
                 nextTimeEvent = self.time_events(self.t_cur, self.y_cur)
             elif nextOutputPoint == self.t_cur:

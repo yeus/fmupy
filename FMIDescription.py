@@ -148,13 +148,13 @@ class FMIDescription:
         try:
             self._document = etree.parse(xmlFile)
         except BaseException as e:
-            print('Error when parsing FMU\'s xml-file. Error: ', e)
+            print(('Error when parsing FMU\'s xml-file. Error: ', e))
             raise FMUError.FMUError('Error when parsing FMU\'s xml-file.\n' + str(e) + '\n')
         self._docroot = self._document.getroot()
         if self._docroot.tag != 'fmiModelDescription':
             raise FMUError.FMUError('XML-File type not recognized!\n')
         ''' Parse the global FMI Model Description Attributes '''
-        for desc in self._docroot.keys():
+        for desc in list(self._docroot.keys()):
             if desc == 'fmiVersion':
                 self.fmiVersion = self._docroot.get(desc)
                 if self.fmiVersion != '1.0':
@@ -184,7 +184,7 @@ class FMIDescription:
             elif desc == 'numberOfEventIndicators':
                 self.numberOfEventIndicators = int(self._docroot.get(desc))
             else:
-                print('unrecognized model description:\t %s: %s \n' % (desc, self._docroot.get(desc)))
+                print(('unrecognized model description:\t %s: %s \n' % (desc, self._docroot.get(desc))))
         ''' Child nodes are each parsed by their own subroutine '''
         for child in self._docroot:
             if child.tag == 'UnitDefinitions':
@@ -198,7 +198,7 @@ class FMIDescription:
             elif child.tag == 'ModelVariables':
                 self._parseModelVariables(child)
             else:
-                print('Unknown tag in FMI Model: %s\n' % child.tag)
+                print(('Unknown tag in FMI Model: %s\n' % child.tag))
 
     def _parseModelVariables(self, varRoot):
         ''' Parse Model Variables
@@ -292,30 +292,30 @@ if __name__ == '__main__':
     fmuFile = zipfile.ZipFile('Modelica_Electrical_Analog_Examples_Rectifier.fmu',  'r')
     fmi = FMIDescription(fmuFile.open('modelDescription.xml'))
 
-    print "Attributes"
-    print "*************"
-    print fmi.fmiVersion
-    print fmi.guid
-    print fmi.numberOfContinuousStates
+    print("Attributes")
+    print("*************")
+    print(fmi.fmiVersion)
+    print(fmi.guid)
+    print(fmi.numberOfContinuousStates)
 
-    print "Units"
-    print "*************"
-    print fmi.units
-    print fmi.units['K']
-    print fmi.units['K']['degC'].gain, fmi.units['K']['degC'].offset
-    print fmi.units['K']['degC'].convert(100)
-    print fmi.units['rad']['deg'].convert(100)
+    print("Units")
+    print("*************")
+    print(fmi.units)
+    print(fmi.units['K'])
+    print(fmi.units['K']['degC'].gain, fmi.units['K']['degC'].offset)
+    print(fmi.units['K']['degC'].convert(100))
+    print(fmi.units['rad']['deg'].convert(100))
 
-    print "Types"
-    print "*************"
-    print fmi.types.keys()
-    print fmi.types['Modelica.SIunits.Voltage'].type
-    print fmi.types['Modelica.SIunits.Voltage'].description
+    print("Types")
+    print("*************")
+    print(list(fmi.types.keys()))
+    print(fmi.types['Modelica.SIunits.Voltage'].type)
+    print(fmi.types['Modelica.SIunits.Voltage'].description)
 
-    print "ScalarVariables"
-    print "***************"
-    print fmi.scalarVariables.keys()
-    print fmi.scalarVariables['Capacitor1.p.v'].type
-    print fmi.scalarVariables['Capacitor1.p.v'].type.unit
-    print fmi.scalarVariables['Capacitor1.p.v'].valueReference
-    print fmi.scalarVariables['Capacitor1.p.v'].variability
+    print("ScalarVariables")
+    print("***************")
+    print(list(fmi.scalarVariables.keys()))
+    print(fmi.scalarVariables['Capacitor1.p.v'].type)
+    print(fmi.scalarVariables['Capacitor1.p.v'].type.unit)
+    print(fmi.scalarVariables['Capacitor1.p.v'].valueReference)
+    print(fmi.scalarVariables['Capacitor1.p.v'].variability)

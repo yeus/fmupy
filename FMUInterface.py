@@ -125,8 +125,8 @@ class FMUInterface:
         self.description = FMIDescription(xmlFileName, self)
 
         ''' Just a little sanity check - standard definition says file name and FMU-name have to be the same '''
-        print(self.description.modelIdentifier+"\n\n")
-        print(fileName+"\n\n")
+        print((self.description.modelIdentifier+"\n\n"))
+        print((fileName+"\n\n"))
         if re.match(r'.*/(.*?).fmu$', fileName).group(1) != self.description.modelIdentifier:
             raise FMUError.FMUError('FMU file corrupted!\nFile name and model identifier differ: ' + re.match(r'.*/(.*?).fmu$', fileName).group(1) + ' vs. ' + self.description.modelIdentifier + '\n')
 
