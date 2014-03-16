@@ -1,4 +1,4 @@
-model efunc
+model efunc "testmodel"
   Real x(start = 1);
 equation
   x = der(x);
