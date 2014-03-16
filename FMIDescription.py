@@ -148,7 +148,7 @@ class FMIDescription:
         try:
             self._document = etree.parse(xmlFile)
         except BaseException as e:
-            print 'Error when parsing FMU\'s xml-file. Error: ', e
+            print('Error when parsing FMU\'s xml-file. Error: ', e)
             raise FMUError.FMUError('Error when parsing FMU\'s xml-file.\n' + str(e) + '\n')
         self._docroot = self._document.getroot()
         if self._docroot.tag != 'fmiModelDescription':

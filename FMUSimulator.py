@@ -130,7 +130,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
         if self.description.scalarVariables[valueName].type.type == 'Real':
             ScalarVariableValueVector = FMUInterface.createfmiRealVector(1)
             ScalarVariableValueVector[0] = float(valueValue)
-            self.interface.fmiSetReal(ScalarVariableReferenceVector, ScalarVariableValueVector)
+            self.interface.fmiSetReal(ScalarVariableScalarVariableReferenceVectorReferenceVector, ScalarVariableValueVector)
         elif self.description.scalarVariables[valueName].type.type in ['Integer', 'Enumeration']:
             ScalarVariableValueVector = FMUInterface.createfmiIntegerVector(1)
             ScalarVariableValueVector[0] = int(valueValue)
@@ -204,6 +204,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
                 refString.append(self.description.scalarVariables[x].valueReference)
                 iString.append(i)
 
+        #TODO: hier werden Werte für bestimmte Variablen abgerufen.
         retValue = range(n)
         k = len(refReal)
         if k > 0:
@@ -431,13 +432,14 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
                         
             # Check, if simulation shall be interrupted
             if self.simulationStopRequest:
-                finalize()
+                finalize()#TODO: fmi terminate??
                 raise(Plugins.Simulator.SimulatorBase.Stopping)
 
             # Update integration statistics
             self.integrationStatistics.reachedTime = t
 
             # Write results
+            #TODO:  das hier benutzen
             self.interface.fmiSetTime(t)
             if not self.description.numberOfContinuousStates == 0:
                 self.interface.fmiSetContinuousStates(x)
@@ -549,6 +551,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
         # Run the integration
         ######################
         # Initialize model
+        #TODO:  hier wird das Modell initialisiert
         (status, nextTimeEvent) = self.initialize(Tstart, ErrorTolerance)
         if status > 1:
             print("Model initialization failed. fmiStatus = " + str(status))
@@ -599,6 +602,7 @@ class Model(Plugins.Simulator.SimulatorBase.Model):
         else:
             simulator = ExplicitEulerSolver()            
 
+        #TODO: wird hier der siulator mit Callback Funktionen ausgestattet?
         simulator.t0 = Tstart            
         simulator.y0 = x0
         
