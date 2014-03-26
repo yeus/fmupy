@@ -202,7 +202,7 @@ class fmu(FMUInterface.FMUInterface):
       eventInfo, status = self.fmiInitialize(fmiTrue, errorTolerance)
       return status, eventInfo
 
-  def simulate(self,dt=0.01, t_start=0.0, t_end=1.0):
+  def simulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[]):
     self.fmiSetTime(0.0)
 
     self.initialize(0.0)
@@ -222,7 +222,7 @@ class fmu(FMUInterface.FMUInterface):
       self.fmiCompletedIntegratorStep()
       
       #print(t,x,dx)
-      step=[[t]+list(x)]
+      step=[[t]+list(x)+[self.getValue(varname) for varname in varnames]]
       if np.nan in step:
         print(step)
         break
@@ -239,10 +239,11 @@ class fmu(FMUInterface.FMUInterface):
 #myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_DoublePendulum.fmu")
 #myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_Pendulum.fmu")
 
-myfmu = fmu("./efunc.fmu")
+myfmu = fmu("./noise_sampled.fmu")
 
-res=myfmu.simulate(dt=0.01, t_end=1.0)
-names=list(myfmu.getStateNames().values())
+res=myfmu.simulate(dt=0.01, t_end=1.0, varnames=['x'])
+#names=list(myfmu.getStateNames().values())
+names=myfmu.getStateNames()
 
 import matplotlib.pyplot as plt
 def plot():
