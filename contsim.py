@@ -33,36 +33,36 @@ class fmu(FMUInterface.FMUInterface):
     
     self.changedStartValue={}
 
-  def getStateNames(self):
-      ''' Returns a list of Strings: the names of all states in the model.
-      '''
-      references = self.fmiGetStateValueReferences()
-      allVars = list(self.description.scalarVariables.items())
-      referenceListSorted = [(index, var[1].valueReference) for index, var in enumerate(allVars)]
-      referenceListSorted.sort(key=itemgetter(1))
-      referenceList = [r[1] for r in referenceListSorted]
-
-      names = []
-      for ref in references:
-          if ref == -1:
-              # No reference available -> name is hidden
-              names.append('')
-          else:
-              k = referenceList.count(ref)
-              if k > 0:
-                  index = -1
-                  i = 0
-                  while i < k:
-                      i += 1
-                      index = referenceList.index(ref, index + 1)
-                      if allVars[referenceListSorted[index][0]][1].alias is None:
-                          name = allVars[referenceListSorted[index][0]][0]
-                          names.append(name)
-                          break
-              else:
-                  # Reference not found. Should not occur.
-                  names.append('')
-      return names
+#  def getStateNames(self):
+#      ''' Returns a list of Strings: the names of all states in the model.
+#      '''
+#      references = self.fmiGetStateValueReferences()
+#      allVars = list(self.description.scalarVariables.items())
+#      referenceListSorted = [(index, var[1].valueReference) for index, var in enumerate(allVars)]
+#      referenceListSorted.sort(key=itemgetter(1))
+#      referenceList = [r[1] for r in referenceListSorted]
+#
+#      names = []
+#      for ref in references:
+#          if ref == -1:
+#              # No reference available -> name is hidden
+#              names.append('')
+#          else:
+#              k = referenceList.count(ref)
+#              if k > 0:
+#                  index = -1
+#                  i = 0
+#                  while i < k:
+#                      i += 1
+#                      index = referenceList.index(ref, index + 1)
+#                      if allVars[referenceListSorted[index][0]][1].alias is None:
+#                          name = allVars[referenceListSorted[index][0]][0]
+#                          names.append(name)
+#                          break
+#              else:
+#                  # Reference not found. Should not occur.
+#                  names.append('')
+#      return names
 
   def getValue(self, name):
       ''' Returns the values of the variables given in name;
@@ -169,18 +169,19 @@ class fmu(FMUInterface.FMUInterface):
           ScalarVariableValueVector[0] = str(valueValue)
           self.fmiSetString(ScalarVariableReferenceVector, ScalarVariableValueVector)
 
-#  def getStateNames(self):
-#      ''' Returns a list of Strings: the names of all states in the model.
-#      '''
-#      references = self.fmiGetStateValueReferences()
-#
-#      names = {}
-#      for key,var in self.description.scalarVariables.items():
-#          if var.valueReference in references and var.variability=='continuous':
-#            #print(key, var.valueReference, var.alias, var.variability, var.description, var.causality,var.directDependency,  var.type)
-#            names[var.valueReference]=key
-#              
-#      return names
+  def getStateNames(self):
+      ''' Returns a list of Strings: the names of all states in the model.
+      '''
+      references = self.fmiGetStateValueReferences()
+
+      names = {}
+      for key,var in self.description.scalarVariables.items():
+          if var.valueReference in references and var.variability=='continuous':
+            #print(key, var.valueReference, var.alias, var.variability, var.description, var.causality,var.directDependency,  var.type)
+            if key[0]=='_': key=key[1:]  #matplotlib labels don#t recognize '_'
+            names[var.valueReference]=key
+              
+      return names
 
   def initialize(self, t, errorTolerance=1e-9):
       ''' Initializes the model at time = t with
@@ -231,7 +232,7 @@ class fmu(FMUInterface.FMUInterface):
     
     self.fmiTerminate()
     
-    return np.array(res).T
+    return np.array(res)
 
 
 
@@ -240,16 +241,18 @@ class fmu(FMUInterface.FMUInterface):
 
 myfmu = fmu("./efunc.fmu")
 
-res=myfmu.simulate(dt=0.01, t_end=300.0)
-names=myfmu.getStateNames()
+res=myfmu.simulate(dt=0.01, t_end=1.0)
+names=list(myfmu.getStateNames().values())
 
 import matplotlib.pyplot as plt
 def plot():
-  for i,vals in enumerate(res[1:]):
-    plt.plot(res[0],vals,label=names[i])
+  for i,vals in enumerate(res[:,1:].T):
+    plt.plot(res[:,0],vals,label=names[i])
     
   plt.legend()
   plt.show()
+  
+plot()
 
 #myfmu.plot(res[])
 
