@@ -29,7 +29,7 @@ import types
 class fmu(FMUInterface.FMUInterface):
   def __init__(self, file):
     #keine co-simulation
-    super().__init__(file,loggingOn=False) #init fmu interface
+    super(fmu, self).__init__(file,loggingOn=False) #init fmu interface
     
     self.changedStartValue={}
 
@@ -239,16 +239,16 @@ class fmu(FMUInterface.FMUInterface):
 #myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_DoublePendulum.fmu")
 #myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_Pendulum.fmu")
 
-myfmu = fmu("./noise_sampled.fmu")
+myfmu = fmu("./efunc.fmu")
 
-res=myfmu.simulate(dt=0.01, t_end=1.0, varnames=['x'])
+res=myfmu.simulate(dt=0.01, t_end=1.0)
 #names=list(myfmu.getStateNames().values())
-names=myfmu.getStateNames()
+#names=list(myfmu.getStateNames())
 
 import matplotlib.pyplot as plt
 def plot():
   for i,vals in enumerate(res[:,1:].T):
-    plt.plot(res[:,0],vals,label=names[i])
+    plt.plot(res[:,0],vals)#,label=names[i])
     
   plt.legend()
   plt.show()
