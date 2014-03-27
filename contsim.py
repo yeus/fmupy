@@ -27,9 +27,9 @@ import types
 
 
 class fmu(FMUInterface.FMUInterface):
-  def __init__(self, file, mode='me'):
+  def __init__(self, file):
     #keine co-simulation
-    super(fmu, self).__init__(file,loggingOn=True, mode=mode) #init fmu interface
+    super(fmu, self).__init__(file,loggingOn=True) #init fmu interface
     
     self.changedStartValue={}
 
@@ -140,6 +140,10 @@ class fmu(FMUInterface.FMUInterface):
       else:
           return retValue[0]
     
+  def printvarprops(self):
+      for varname, var in self.description.scalarVariables.items():
+        print("{:<40}{:<15}{:<10}{:<12}{:<10}".format(varname, var.alias, var.causality, var.variability, var.directDependency))#description type valueReference
+    
   def setValue(self, valueName, valueValue):
       ''' set the variable valueName to valueValue
           @param valueName: name of variable to be set
@@ -203,6 +207,12 @@ class fmu(FMUInterface.FMUInterface):
       return status, eventInfo
 
   def simulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[]):
+    if self._mode == 'me':
+      return self.mesimulate(dt, t_start, t_end, varnames)
+    elif self._mode == 'cs':
+      return self.cosimulate(dt, t_start, t_end, varnames)
+
+  def mesimulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[]):
     self.fmiSetTime(0.0)
 
     self.initialize(0.0)
@@ -234,16 +244,14 @@ class fmu(FMUInterface.FMUInterface):
     
     return np.array(res)
 
-  def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 10.0, varnames=[]):
+  def cosimulate(self, dt=0.1, t_start = 0.0, t_end = 1.0, varnames=[]):
     tc = t_start #current master time
     
     self.fmiInitializeSlave(t_start, True, t_end)
     res=[]
     
     while tc < t_end:
-      x=[self.getValue('x')]
-      
-      step=[[tc]+list(x)+[self.getValue(varname) for varname in varnames]]
+      step=[[tc]+[self.getValue(varname) for varname in varnames]]
       
       self.fmiDoStep(tc, dt, True)
       res+=step
@@ -256,11 +264,12 @@ class fmu(FMUInterface.FMUInterface):
 #myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_DoublePendulum.fmu")
 #myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_Pendulum.fmu")
 
-myfmu = fmu("./efunc.fmu", mode='cs')
-res=myfmu.cosimulate()
+#myfmu = fmu("./efunc.fmu", mode='cs')
+#res=myfmu.cosimulate()
 
-#myfmu = fmu("./Modelica_Mechanics_Rotational_Examples_First.fmu")
-#res=myfmu.simulate(dt=0.001, t_end=1.0)
+myfmu = fmu("./Modelica_Mechanics_Rotational_Examples_First.fmu")
+#myfmu.printvarprops()
+res=myfmu.simulate(t_end=100.0,varnames=['inertia1.phi','inertia2.phi'])
 #names=list(myfmu.getStateNames().values())
 ##names=myfmu.getStateNames()
 

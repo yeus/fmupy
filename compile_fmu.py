@@ -37,7 +37,7 @@ from pymodelica import compile_fmu
 #my_fmu = compile_fmu(model_name, mo_file, target='cs')  #target='cs'  for cosimulation, otherwise, just for model exchange
 
 # Compile an example model from the MSL
-fmu1 = compile_fmu('Modelica.Mechanics.Rotational.Examples.First')
+fmu1 = compile_fmu('Modelica.Mechanics.Rotational.Examples.First', target='cs')
 
 
 #JMUs:

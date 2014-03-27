@@ -197,8 +197,17 @@ class FMIDescription:
                 self._parseDefaultExperiment(child)
             elif child.tag == 'ModelVariables':
                 self._parseModelVariables(child)
+            elif child.tag == 'Implementation':
+                self._parseImplementation(child)
             else:
                 print(('Unknown tag in FMI Model: %s\n' % child.tag))
+
+    def _parseImplementation(self, Root):
+        self.simulationtype = 'model exchange'
+        for i in Root:
+          if i.tag == 'CoSimulation_StandAlone':
+            print("FMU for Co-Simulation detected...")
+            self.simulationtype = 'co-simulation'
 
     def _parseModelVariables(self, varRoot):
         ''' Parse Model Variables
