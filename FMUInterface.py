@@ -92,17 +92,19 @@ class fmiEventInfo(ctypes.Structure):
 ''' end of file-type correspondents '''
 
 
-class FMUInterface:
+class FMUInterface(object):
     ''' This class encapsulates the FMU C-Interface
         all fmi* functions are a public interface to the FMU-functions
         not implemented: type checks and automatic conversions for fmi* functions
     '''
-    def __init__(self, fileName, loggingOn=True):
+    def __init__(self, fileName, loggingOn=True, mode='me'):
         ''' Load an FMU-File and start a new instance
             @param fileName: complete path and name of FMU-file (.fmu)
             @type fileName: string
         '''
         self._loggingOn = loggingOn
+        #TODO: try to find out automatically whether an FMU is for Co-simulation or Model Exchange
+        self._mode = mode #register mode ('cs' for co-simulation and 'me' for model exchange)
 
         ''' Open the given fmu-file (read only)'''
         try:
@@ -131,6 +133,7 @@ class FMUInterface:
             raise FMUError.FMUError('FMU file corrupted!\nFile name and model identifier differ: ' + re.match(r'.*/(.*?).fmu$', fileName).group(1) + ' vs. ' + self.description.modelIdentifier + '\n')
 
         self._InstantiateModel()
+        print("model instantiated")
         self._createCInterface()
 
     def _assembleBinaryName(self, modelName):
@@ -173,7 +176,9 @@ class FMUInterface:
         self._tmpfile.file.close()
 
         ''' C-interface for system functions '''
+        #CFUNCTYPE: first argument is the return type of the function (None for vois and ctypes.c_void_p  for "void* " (void-Ptr))
         Logger         = ctypes.CFUNCTYPE(None, fmiComponent, fmiString, fmiStatus, fmiString, fmiString)
+        StepFinished   = ctypes.CFUNCTYPE(None, fmiComponent, fmiStatus)
         AllocateMemory = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_uint, ctypes.c_uint)
         FreeMemory     = ctypes.CFUNCTYPE(None, ctypes.c_void_p)
 
@@ -182,21 +187,8 @@ class FMUInterface:
                 print(message)
             #self.log.append( (c, instanceName, status, category, message) )
 
-        class _fmiCallbackFunctions(ctypes.Structure):
-            _fields_ = [('logger', Logger), ('allocateMemory', AllocateMemory), ('freeMemory', FreeMemory)]
-        ''' mapping of memory management functions for FMU to operating system functions, depending on OS.
-            For Linux it refers to the std-C library - this should always be present
-        '''
-        if platform.system() == 'Linux':
-            self._fmiCallbackFunctions = _fmiCallbackFunctions(
-                                     logger=Logger(_Logger),
-                                     allocateMemory=AllocateMemory(ctypes.cdll.LoadLibrary('libc.so.6').calloc),
-                                     freeMemory=FreeMemory(ctypes.cdll.LoadLibrary('libc.so.6').free))
-        elif platform.system() == 'Windows':
-            self._fmiCallbackFunctions = _fmiCallbackFunctions(
-                                     logger=Logger(_Logger),
-                                     allocateMemory=AllocateMemory(ctypes.cdll.msvcrt.calloc),
-                                     freeMemory=FreeMemory(ctypes.cdll.msvcrt.free))
+        def _StepFinished(c , status):
+            print("Step Finished!")
 
         ''' Load instance of library into memory '''
         try:
@@ -205,18 +197,82 @@ class FMUInterface:
         except BaseException as e:
             raise FMUError.FMUError('Error when loading binary from FMU.\n' + str(e) + '\n')
 
-        InstantiateModel = getattr(self._library, self.description.modelIdentifier + '_fmiInstantiateModel')
-        InstantiateModel.argtypes = [fmiString, fmiString, _fmiCallbackFunctions, fmiBoolean]
-        InstantiateModel.restype = fmiComponent
-        try:
-          self._modelInstancePtr = InstantiateModel(self.instanceID.encode('utf-8'), self.description.guid.encode('utf-8'), self._fmiCallbackFunctions, fmiTrue if self._loggingOn else fmiFalse)
-        except:
-          print(self.instanceID, type(self.instanceID),"\n\n")
-          print(self.description.guid, type(self.description.guid),"\n\n")
-          raise
-        
-        if self._modelInstancePtr == None:
-            raise FMUError.FMUError('Instantiation of FMU failed.\n')
+        if self._mode=='cs':
+          
+          class _fmiCallbackFunctions(ctypes.Structure):
+              _fields_ = [('logger', Logger), ('allocateMemory', AllocateMemory), ('freeMemory', FreeMemory), ('stepFinished', StepFinished)]
+          ''' mapping of memory management functions for FMU to operating system functions, depending on OS.
+              For Linux it refers to the std-C library - this should always be present
+          '''
+          if platform.system() == 'Linux':
+              self._fmiCallbackFunctions = _fmiCallbackFunctions(
+                                      logger=Logger(_Logger),
+                                      allocateMemory=AllocateMemory(ctypes.cdll.LoadLibrary('libc.so.6').calloc),
+                                      freeMemory=FreeMemory(ctypes.cdll.LoadLibrary('libc.so.6').free),
+                                      stepFinished = StepFinished(_StepFinished))
+          elif platform.system() == 'Windows':
+              self._fmiCallbackFunctions = _fmiCallbackFunctions(
+                                      logger=Logger(_Logger),
+                                      allocateMemory=AllocateMemory(ctypes.cdll.msvcrt.calloc),
+                                      freeMemory=FreeMemory(ctypes.cdll.msvcrt.free),
+                                      stepFinished = StepFinished(_StepFinished))
+          
+          InstantiateSlave = getattr(self._library, self.description.modelIdentifier + '_fmiInstantiateSlave')
+          InstantiateSlave.argtypes = [fmiString, fmiString, #instancename, fmuGUID
+                                       fmiString, fmiString, #fmuLocation, mimetype
+                                       fmiReal, fmiBoolean, #timeout, visible
+                                       fmiBoolean, #interactive
+                                       _fmiCallbackFunctions, #functions
+                                       fmiBoolean] #loggingOn
+          InstantiateSlave.restype = fmiComponent   
+          
+          try:
+            FMI_MIME_CS_STANDALONE = b"application/x-fmu-sharedlibrary"
+            self._modelInstancePtr = InstantiateSlave(self.instanceID.encode('utf-8'), 
+                                                      self.description.guid.encode('utf-8'),
+                                                      None,FMI_MIME_CS_STANDALONE,
+                                                      fmiReal(0) , fmiFalse, #only in batch-mode for now (no Simulation window)
+                                                      fmiFalse, #False means: fmu gets started automatically
+                                                      self._fmiCallbackFunctions, 
+                                                      fmiTrue if self._loggingOn else fmiFalse)
+          except:
+            print(self.instanceID, type(self.instanceID),"\n\n")
+            print(self.description.guid, type(self.description.guid),"\n\n")
+            raise
+          
+          if self._modelInstancePtr == None:
+              raise FMUError.FMUError('Instantiation of cs FMU failed.\n')
+          
+        elif self._mode=='me':
+          
+          class _fmiCallbackFunctions(ctypes.Structure):
+              _fields_ = [('logger', Logger), ('allocateMemory', AllocateMemory), ('freeMemory', FreeMemory)]
+          ''' mapping of memory management functions for FMU to operating system functions, depending on OS.
+              For Linux it refers to the std-C library - this should always be present
+          '''
+          if platform.system() == 'Linux':
+              self._fmiCallbackFunctions = _fmiCallbackFunctions(
+                                      logger=Logger(_Logger),
+                                      allocateMemory=AllocateMemory(ctypes.cdll.LoadLibrary('libc.so.6').calloc),
+                                      freeMemory=FreeMemory(ctypes.cdll.LoadLibrary('libc.so.6').free))
+          elif platform.system() == 'Windows':
+              self._fmiCallbackFunctions = _fmiCallbackFunctions(
+                                      logger=Logger(_Logger),
+                                      allocateMemory=AllocateMemory(ctypes.cdll.msvcrt.calloc),
+                                      freeMemory=FreeMemory(ctypes.cdll.msvcrt.free))
+          
+          InstantiateModel = getattr(self._library, self.description.modelIdentifier + '_fmiInstantiateModel')
+          InstantiateModel.argtypes = [fmiString, fmiString, _fmiCallbackFunctions, fmiBoolean]
+          InstantiateModel.restype = fmiComponent
+          try:
+            self._modelInstancePtr = InstantiateModel(self.instanceID.encode('utf-8'), self.description.guid.encode('utf-8'), self._fmiCallbackFunctions, fmiTrue if self._loggingOn else fmiFalse)
+          except:
+            print(self.instanceID, type(self.instanceID),"\n\n")
+            print(self.description.guid, type(self.description.guid),"\n\n")
+            raise
+          
+          if self._modelInstancePtr == None:
+              raise FMUError.FMUError('Instantiation of me FMU failed.\n')
 
     def free(self):
         ''' Call FMU destructor before being destructed. Just cleaning up. '''
@@ -320,6 +376,10 @@ class FMUInterface:
         self._fmiTerminate = getattr(self._library, self.description.modelIdentifier + '_fmiTerminate')
         self._fmiTerminate.argtypes = [fmiComponent]
         self._fmiTerminate.restype = fmiStatus
+        
+        #functions for co-simulation:
+        #self._fmiInstantiateSlave = getattr(self._library, self.description.modelIdentifier + '_fmiTerminate')        
+        
 
     def fmiGetModelTypesPlatform(self):
         return self._fmiGetModelTypesPlatform(self._modelInstancePtr)
