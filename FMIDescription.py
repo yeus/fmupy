@@ -140,6 +140,7 @@ class FMIDescription:
         self.defaultStartTime = 0
         self.defaultStopTime = 1
         self.defaultTolerance = 1e-4
+        self.simulationtype = 'model exchange' #gets correted later, when parsing the xml in the case of a co-simulation FMU
 
         if xmlFile is None:
             return
@@ -203,7 +204,6 @@ class FMIDescription:
                 print(('Unknown tag in FMI Model: %s\n' % child.tag))
 
     def _parseImplementation(self, Root):
-        self.simulationtype = 'model exchange'
         for i in Root:
           if i.tag == 'CoSimulation_StandAlone':
             print("FMU for Co-Simulation detected...")
