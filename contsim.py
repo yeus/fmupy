@@ -173,6 +173,18 @@ class fmu(FMUInterface.FMUInterface):
           ScalarVariableValueVector[0] = str(valueValue)
           self.fmiSetString(ScalarVariableReferenceVector, ScalarVariableValueVector)
 
+  def getOutputNames(self):
+      ''' Returns a list of Strings: the names of all output variables in the model.
+      '''
+      names = {}
+      for key,var in self.description.scalarVariables.items():
+          if var.causality=='output':
+            #print(key, var.valueReference, var.alias, var.variability, var.description, var.causality,var.directDependency,  var.type)
+            if key[0]=='_': key=key[1:]  #matplotlib labels don#t recognize '_'
+            names[var.valueReference]=key
+              
+      return names      
+
   def getStateNames(self):
       ''' Returns a list of Strings: the names of all states in the model.
       '''
@@ -223,7 +235,15 @@ class fmu(FMUInterface.FMUInterface):
       x  = self.fmiGetContinuousStates()
       dx = self.fmiGetDerivatives()
       
-      xn = x + dx*dt
+      xn = x + dx*dt #explicit euler
+      
+      #def RK4(y,h,g):
+        #k1=g(y);
+        #k2=g(y+h*.5*k1);
+        #k3=g(y+h*.5*k2);
+        #k4=g(y+h*k3);
+        #yn=y+h/6.0*(k1+2*(k2+k3)+k4)
+        #return yn
       
       self.fmiSetTime(t)
       
@@ -232,7 +252,7 @@ class fmu(FMUInterface.FMUInterface):
       self.fmiCompletedIntegratorStep()
       
       #print(t,x,dx)
-      step=[[t]+list(x)+[self.getValue(varname) for varname in varnames]]
+      step=[[t]+[self.getValue(varname) for varname in varnames]]
       if np.nan in step:
         print(step)
         break
@@ -256,6 +276,8 @@ class fmu(FMUInterface.FMUInterface):
       self.fmiDoStep(tc, dt, True)
       res+=step
       tc+=dt
+
+    self.fmiTerminateSlave()
     
     return np.array(res)
 
@@ -264,19 +286,21 @@ class fmu(FMUInterface.FMUInterface):
 #myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_DoublePendulum.fmu")
 #myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_Pendulum.fmu")
 
-#myfmu = fmu("./efunc.fmu", mode='cs')
+myfmu = fmu("./FMU/Batteriebaustein.fmu")
 #res=myfmu.cosimulate()
 
-myfmu = fmu("./Modelica_Mechanics_Rotational_Examples_First.fmu")
+#myfmu = fmu("./Modelica_Mechanics_Rotational_Examples_First.fmu")
 #myfmu.printvarprops()
-res=myfmu.simulate(t_end=100.0,varnames=['inertia1.phi','inertia2.phi'])
-#names=list(myfmu.getStateNames().values())
-##names=myfmu.getStateNames()
+#print(myfmu.getOutputNames())
+names=list(myfmu.getOutputNames().values())
+#names=myfmu.getStateNames()
+res=myfmu.simulate(dt=0.01, t_end=10.0,varnames=names)
+
 
 import matplotlib.pyplot as plt
 def plot():
   for i,vals in enumerate(res[:,1:].T):
-    plt.plot(res[:,0],vals)#,label=names[i])
+    plt.plot(res[:,0],vals,label=names[i])
     
   plt.legend()
   plt.show()
