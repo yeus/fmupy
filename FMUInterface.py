@@ -371,13 +371,13 @@ class FMUInterface(object):
           self._fmiCompletedIntegratorStep.restype = fmiStatus
           
         elif self._mode == 'cs':
-          self._fmiGetTypesPlatform = getattr(self._library, self.description.modelIdentifier + '_fmiDoStep')
-          self._fmiGetTypesPlatform.argtypes = [fmiComponent, fmiReal, fmiReal, fmiBoolean]
-          self._fmiGetTypesPlatform.restype = fmiStatus
+          self._fmiDoStep = getattr(self._library, self.description.modelIdentifier + '_fmiDoStep')
+          self._fmiDoStep.argtypes = [fmiComponent, fmiReal, fmiReal, fmiBoolean]
+          self._fmiDoStep.restype = fmiStatus
           
-          self._fmiGetTypesPlatform = getattr(self._library, self.description.modelIdentifier + '_fmiCancelStep')
-          self._fmiGetTypesPlatform.argtypes = [fmiComponent]
-          self._fmiGetTypesPlatform.restype = fmiStatus
+          self._fmiCancelStep = getattr(self._library, self.description.modelIdentifier + '_fmiCancelStep')
+          self._fmiCancelStep.argtypes = [fmiComponent]
+          self._fmiCancelStep.restype = fmiStatus
 
         #initialization
         if self._mode == 'me':
@@ -390,17 +390,17 @@ class FMUInterface(object):
           self._fmiTerminate.restype = fmiStatus
           
         elif self._mode == 'cs':
-          self._fmiInitialize = getattr(self._library, self.description.modelIdentifier + '_fmiInitializeSlave')
-          self._fmiInitialize.argtypes = [fmiComponent, fmiReal, fmiBoolean, fmiReal]
-          self._fmiInitialize.restype = fmiStatus
+          self._fmiInitializeSlave = getattr(self._library, self.description.modelIdentifier + '_fmiInitializeSlave')
+          self._fmiInitializeSlave.argtypes = [fmiComponent, fmiReal, fmiBoolean, fmiReal]
+          self._fmiInitializeSlave.restype = fmiStatus
           
-          self._fmiTerminate = getattr(self._library, self.description.modelIdentifier + '_fmiTerminateSlave')
-          self._fmiTerminate.argtypes = [fmiComponent]
-          self._fmiTerminate.restype = fmiStatus
+          self._fmiTerminateSlave = getattr(self._library, self.description.modelIdentifier + '_fmiTerminateSlave')
+          self._fmiTerminateSlave.argtypes = [fmiComponent]
+          self._fmiTerminateSlave.restype = fmiStatus
           
-          self._fmiTerminate = getattr(self._library, self.description.modelIdentifier + '_fmiResetSlave')
-          self._fmiTerminate.argtypes = [fmiComponent]
-          self._fmiTerminate.restype = fmiStatus
+          self._fmiResetSlave = getattr(self._library, self.description.modelIdentifier + '_fmiResetSlave')
+          self._fmiResetSlave.argtypes = [fmiComponent]
+          self._fmiResetSlave.restype = fmiStatus
         
         #variable setting
         if self._mode == 'me':
@@ -429,29 +429,37 @@ class FMUInterface(object):
           self._fmiGetStateValueReferences.restype = fmiStatus
           
         elif self._mode == 'cs':
-          self._fmiSetReal = getattr(self._library, self.description.modelIdentifier + '_fmiSetRealInputDerivatives')
-          self._fmiSetReal.argtypes = [fmiComponent, fmiValueReferenceVector, fmiIntegerVector, ctypes.c_uint, fmiRealVector]
-          self._fmiSetReal.restype = fmiStatus
+          self._fmiSetRealInputDerivatives = getattr(self._library, self.description.modelIdentifier + '_fmiSetRealInputDerivatives')
+          self._fmiSetRealInputDerivatives.argtypes = [fmiComponent, fmiValueReferenceVector, fmiIntegerVector, ctypes.c_uint, fmiRealVector]
+          self._fmiSetRealInputDerivatives.restype = fmiStatus
           
-          self._fmiSetReal = getattr(self._library, self.description.modelIdentifier + '_fmiGetStatus')
-          self._fmiSetReal.argtypes = [fmiComponent, fmiStatusKind, fmiStatusPtr]
-          self._fmiSetReal.restype = fmiStatus
+          self._fmiGetStatus = getattr(self._library, self.description.modelIdentifier + '_fmiGetStatus')
+          self._fmiGetStatus.argtypes = [fmiComponent, fmiStatusKind, fmiStatusPtr]
+          self._fmiGetStatus.restype = fmiStatus
           
-          self._fmiSetReal = getattr(self._library, self.description.modelIdentifier + '_fmiGetRealStatus')
-          self._fmiSetReal.argtypes = [fmiComponent, fmiStatusKind, fmiRealPtr]
-          self._fmiSetReal.restype = fmiStatus
+          self._fmiGetRealStatus = getattr(self._library, self.description.modelIdentifier + '_fmiGetRealStatus')
+          self._fmiGetRealStatus.argtypes = [fmiComponent, fmiStatusKind, fmiRealPtr]
+          self._fmiGetRealStatus.restype = fmiStatus
 
-          self._fmiSetReal = getattr(self._library, self.description.modelIdentifier + '_fmiGetIntegerStatus')
-          self._fmiSetReal.argtypes = [fmiComponent, fmiStatusKind, fmiIntegerPtr]
-          self._fmiSetReal.restype = fmiStatus
+          self._fmiGetIntegerStatus = getattr(self._library, self.description.modelIdentifier + '_fmiGetIntegerStatus')
+          self._fmiGetIntegerStatus.argtypes = [fmiComponent, fmiStatusKind, fmiIntegerPtr]
+          self._fmiGetIntegerStatus.restype = fmiStatus
           
-          self._fmiSetReal = getattr(self._library, self.description.modelIdentifier + '_fmiGetBooleanStatus')
-          self._fmiSetReal.argtypes = [fmiComponent, fmiStatusKind, fmiBooleanPtr]
-          self._fmiSetReal.restype = fmiStatus
+          self._fmiGetBooleanStatus = getattr(self._library, self.description.modelIdentifier + '_fmiGetBooleanStatus')
+          self._fmiGetBooleanStatus.argtypes = [fmiComponent, fmiStatusKind, fmiBooleanPtr]
+          self._fmiGetBooleanStatus.restype = fmiStatus
           
-          self._fmiSetReal = getattr(self._library, self.description.modelIdentifier + '_fmiGetStringStatus')
-          self._fmiSetReal.argtypes = [fmiComponent, fmiStatusKind, fmiStringPtr]
-          self._fmiSetReal.restype = fmiStatus
+          self._fmiGetStringStatus = getattr(self._library, self.description.modelIdentifier + '_fmiGetStringStatus')
+          self._fmiGetStringStatus.argtypes = [fmiComponent, fmiStatusKind, fmiStringPtr]
+          self._fmiGetStringStatus.restype = fmiStatus
+          
+    def fmiInitializeSlave(self, tStart, StopTimeDefined, tStop):
+        eventInfo = fmiEventInfo()
+        status = self._fmiInitializeSlave(self._modelInstancePtr, tStart, fmiTrue if StopTimeDefined else fmiFalse, tStop)
+        return (eventInfo, status)
+      
+    def fmiDoStep(self, t, h, newstep):  #current communication point, communication stepsize, newstep=True  if the master accepts the last step
+        return self._fmiDoStep(self._modelInstancePtr, t, h, fmiTrue if newstep else fmiFalse)
           
     def fmiGetModelTypesPlatform(self):
         return self._fmiGetModelTypesPlatform(self._modelInstancePtr)

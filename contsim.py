@@ -27,9 +27,9 @@ import types
 
 
 class fmu(FMUInterface.FMUInterface):
-  def __init__(self, file):
+  def __init__(self, file, mode='me'):
     #keine co-simulation
-    super(fmu, self).__init__(file,loggingOn=False) #init fmu interface
+    super(fmu, self).__init__(file,loggingOn=True, mode=mode) #init fmu interface
     
     self.changedStartValue={}
 
@@ -234,16 +234,35 @@ class fmu(FMUInterface.FMUInterface):
     
     return np.array(res)
 
+  def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 10.0, varnames=[]):
+    tc = t_start #current master time
+    
+    self.fmiInitializeSlave(t_start, True, t_end)
+    res=[]
+    
+    while tc < t_end:
+      x=[self.getValue('x')]
+      
+      step=[[tc]+list(x)+[self.getValue(varname) for varname in varnames]]
+      
+      self.fmiDoStep(tc, dt, True)
+      res+=step
+      tc+=dt
+    
+    return np.array(res)
+
 
 
 #myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_DoublePendulum.fmu")
 #myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_Pendulum.fmu")
 
-myfmu = fmu("./efunc.fmu")
+myfmu = fmu("./efunc.fmu", mode='cs')
+res=myfmu.cosimulate()
 
-res=myfmu.simulate(dt=0.01, t_end=1.0)
+#myfmu = fmu("./Modelica_Mechanics_Rotational_Examples_First.fmu")
+#res=myfmu.simulate(dt=0.001, t_end=1.0)
 #names=list(myfmu.getStateNames().values())
-#names=list(myfmu.getStateNames())
+##names=myfmu.getStateNames()
 
 import matplotlib.pyplot as plt
 def plot():
@@ -255,14 +274,14 @@ def plot():
   
 plot()
 
-#myfmu.plot(res[])
+##myfmu.plot(res[])
 
-#numpy.savetxt("foo.csv", a, delimiter=",")
+##numpy.savetxt("foo.csv", a, delimiter=",")
 
-#myfmu.changedStartValue["x"]=3.0
+##myfmu.changedStartValue["x"]=3.0
 
-#myfmu.fmiTerminate()
-#myfmu.free()
+##myfmu.fmiTerminate()
+##myfmu.free()
 
 
 #initialisation:
