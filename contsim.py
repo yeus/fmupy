@@ -28,7 +28,6 @@ import types
 
 class fmu(FMUInterface.FMUInterface):
   def __init__(self, file):
-    #keine co-simulation
     super(fmu, self).__init__(file,loggingOn=True) #init fmu interface
     
     self.changedStartValue={}
@@ -140,10 +139,6 @@ class fmu(FMUInterface.FMUInterface):
       else:
           return retValue[0]
     
-  def printvarprops(self):
-      for varname, var in self.description.scalarVariables.items():
-        print("{:<40}{:<15}{:<10}{:<12}{:<10}".format(varname, var.alias, var.causality, var.variability, var.directDependency))#description type valueReference
-    
   def setValue(self, valueName, valueValue):
       ''' set the variable valueName to valueValue
           @param valueName: name of variable to be set
@@ -173,6 +168,25 @@ class fmu(FMUInterface.FMUInterface):
           ScalarVariableValueVector[0] = str(valueValue)
           self.fmiSetString(ScalarVariableReferenceVector, ScalarVariableValueVector)
 
+
+  def printvarprops(self):
+      ''' Returns a list of Strings: the names of all output variables in the model.
+      '''
+      names = {}
+      for key,var in self.description.scalarVariables.items():
+          #if var.causality=='output':
+            print("{:<40}{v.valueReference:<30}{v.alias:<20}{v.variability}".format(key,v=var))#key, var.valueReference, var.alias, var.variability, var.description, var.causality,var.directDependency,  var.type)
+            #if key[0]=='_': key=key[1:]  #matplotlib labels don#t recognize '_'
+            #names[var.valueReference]=key
+              
+      return names      
+
+  def getContinuousVariables(self):
+      if self._mode is 'me':
+        return self.getVariables('continuous')
+      elif self._mode is 'cs':
+        return self.getVariables('continuous')
+
   def getOutputNames(self):
       ''' Returns a list of Strings: the names of all output variables in the model.
       '''
@@ -193,6 +207,22 @@ class fmu(FMUInterface.FMUInterface):
       names = {}
       for key,var in self.description.scalarVariables.items():
           if var.valueReference in references and var.variability=='continuous':
+            #print(key, var.valueReference, var.alias, var.variability, var.description, var.causality,var.directDependency,  var.type)
+            if key[0]=='_': key=key[1:]  #matplotlib labels don#t recognize '_'
+            names[var.valueReference]=key
+              
+      return names
+
+  def getVariables(self, variability = 'all', causality = 'all'):
+      ''' 
+	variability:  return variables with variability property
+	Returns:  
+	  a list of Strings: the namesof the variables with a certain property
+      '''
+
+      names = {}
+      for key,var in self.description.scalarVariables.items():
+          if variability == 'all' or var.variability==variability:
             #print(key, var.valueReference, var.alias, var.variability, var.description, var.causality,var.directDependency,  var.type)
             if key[0]=='_': key=key[1:]  #matplotlib labels don#t recognize '_'
             names[var.valueReference]=key
@@ -220,8 +250,10 @@ class fmu(FMUInterface.FMUInterface):
 
   def simulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[]):
     if self._mode == 'me':
+      print("run me-simulation")
       return self.mesimulate(dt, t_start, t_end, varnames)
     elif self._mode == 'cs':
+      print("run co-simulation")
       return self.cosimulate(dt, t_start, t_end, varnames)
 
   def mesimulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[]):
@@ -231,24 +263,30 @@ class fmu(FMUInterface.FMUInterface):
 
     res=[]
 
-    for t in np.arange(t_start,t_end,dt):
-      x  = self.fmiGetContinuousStates()
-      dx = self.fmiGetDerivatives()
-      
-      xn = x + dx*dt #explicit euler
-      
-      #def RK4(y,h,g):
-        #k1=g(y);
-        #k2=g(y+h*.5*k1);
-        #k3=g(y+h*.5*k2);
-        #k4=g(y+h*k3);
-        #yn=y+h/6.0*(k1+2*(k2+k3)+k4)
-        #return yn
-      
+    def RK4(y,t,h,f):
+        h05 = h * .5
+        t05 = t + h05
+        k1=f(t,y);
+        k2=f(t05,y+h05*k1);
+        k3=f(t05,y+h05*k2);
+        k4=f(t+h,y+h*k3);
+        yn=y+h/6.0*(k1+2*(k2+k3)+k4)
+        return yn
+    
+    def f(t,y):
       self.fmiSetTime(t)
+      self.fmiSetContinuousStates(y)
       
-      self.fmiSetContinuousStates(xn)
+      ny = self.fmiGetDerivatives()
       
+      return ny
+
+    xn  = self.fmiGetContinuousStates()
+    for t in np.arange(t_start,t_end,dt):
+      
+      #xn = xn + dt * f(t,xn) #explicit euler
+      xn = RK4(xn,t,dt,f) #explicit Runge-Kutta 4 (RK4)
+     
       self.fmiCompletedIntegratorStep()
       
       #print(t,x,dx)
@@ -264,7 +302,7 @@ class fmu(FMUInterface.FMUInterface):
     
     return np.array(res)
 
-  def cosimulate(self, dt=0.1, t_start = 0.0, t_end = 1.0, varnames=[]):
+  def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 1.0, varnames=[]):
     tc = t_start #current master time
     
     self.fmiInitializeSlave(t_start, True, t_end)
@@ -286,18 +324,23 @@ class fmu(FMUInterface.FMUInterface):
 #myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_DoublePendulum.fmu")
 #myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_Pendulum.fmu")
 
-myfmu = fmu("./FMU/Batteriebaustein.fmu")
+#myfmu = fmu("./FMU/Batteriebaustein.fmu")
+myfmu = fmu("./efunc.fmu")
 #res=myfmu.cosimulate()
 
 #myfmu = fmu("./Modelica_Mechanics_Rotational_Examples_First.fmu")
 #myfmu.printvarprops()
 #print(myfmu.getOutputNames())
-names=list(myfmu.getOutputNames().values())
+names=list(myfmu.getContinuousVariables().values())
 #names=myfmu.getStateNames()
-res=myfmu.simulate(dt=0.01, t_end=10.0,varnames=names)
+res=myfmu.simulate(dt=0.1, t_end=10.0,varnames=names)
 
 
 import matplotlib.pyplot as plt
+
+
+x = np.linspace(1,10,100)
+plt.plot(x,np.exp(x))
 def plot():
   for i,vals in enumerate(res[:,1:].T):
     plt.plot(res[:,0],vals,label=names[i])
