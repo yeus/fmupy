@@ -281,16 +281,18 @@ class fmu(FMUInterface.FMUInterface):
       
       return ny
 
-    xn  = self.fmiGetContinuousStates()
+    x  = self.fmiGetContinuousStates()
+    res += [[0.0]+[self.getValue(varname) for varname in varnames]]
     for t in np.arange(t_start,t_end,dt):
       
       #xn = xn + dt * f(t,xn) #explicit euler
-      xn = RK4(xn,t,dt,f) #explicit Runge-Kutta 4 (RK4)
+      x = RK4(x,t,dt,f) #explicit Runge-Kutta 4 (RK4)
      
       self.fmiCompletedIntegratorStep()
       
+      #save results in array
       #print(t,x,dx)
-      step=[[t]+[self.getValue(varname) for varname in varnames]]
+      step=[[t+dt]+[self.getValue(varname) for varname in varnames]]
       if np.nan in step:
         print(step)
         break
@@ -333,13 +335,14 @@ myfmu = fmu("./efunc.fmu")
 #print(myfmu.getOutputNames())
 names=list(myfmu.getContinuousVariables().values())
 #names=myfmu.getStateNames()
-res=myfmu.simulate(dt=0.1, t_end=10.0,varnames=names)
+t_end = 10.0
+res=myfmu.simulate(dt=0.1, t_end=t_end,varnames=names)
 
 
 import matplotlib.pyplot as plt
 
 
-x = np.linspace(1,10,100)
+x = np.linspace(0.0,t_end,100.0)
 plt.plot(x,np.exp(x))
 def plot():
   for i,vals in enumerate(res[:,1:].T):
