@@ -246,7 +246,36 @@ class fmu(FMUInterface.FMUInterface):
           self.setValue(name, self.changedStartValue[name])
       # Initialize model
       eventInfo, status = self.fmiInitialize(fmiTrue, errorTolerance)
-      return status, eventInfo
+      x0 = self.fmiGetContinuousStates()
+      return x0, status, eventInfo
+
+  def f(self,t,y):
+      """ return a function which can be used for external solver
+      
+      the example (just small differences, no jacobian) from the scipy intergrator:
+      
+      http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.ode.html#scipy.integrate.ode
+      
+      The integration:
+         f = myfmu.f #loaded FMU
+         t0 = 0.0
+         y0 = myfmu.initialize(0.0)
+
+         r = ode(f).set_integrator('zvode', method='bdf')
+         r.set_initial_value(y0, t0)
+         t1 = 10
+         dt = 1
+         while r.successful() and r.t < t1:
+             r.integrate(r.t+dt)
+             print("%g %g" % (r.t, r.y))
+      """
+      
+      self.fmiSetTime(t)
+      self.fmiSetContinuousStates(y)
+      
+      ny = self.fmiGetDerivatives()
+      
+      return ny
 
   def simulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[]):
     if self._mode == 'me':
@@ -257,12 +286,6 @@ class fmu(FMUInterface.FMUInterface):
       return self.cosimulate(dt, t_start, t_end, varnames)
 
   def mesimulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[]):
-    self.fmiSetTime(0.0)
-
-    self.initialize(0.0)
-
-    res=[]
-
     def RK4(y,t,h,f):
         h05 = h * .5
         t05 = t + h05
@@ -272,21 +295,16 @@ class fmu(FMUInterface.FMUInterface):
         k4=f(t+h,y+h*k3);
         yn=y+h/6.0*(k1+2*(k2+k3)+k4)
         return yn
-    
-    def f(t,y):
-      self.fmiSetTime(t)
-      self.fmiSetContinuousStates(y)
-      
-      ny = self.fmiGetDerivatives()
-      
-      return ny
 
-    x  = self.fmiGetContinuousStates()
-    res += [[0.0]+[self.getValue(varname) for varname in varnames]]
+    self.fmiSetTime(0.0)
+
+    x,status,eventInfo = self.initialize(0.0)
+
+    res = [[0.0]+[self.getValue(varname) for varname in varnames]]
+    #integration loop
     for t in np.arange(t_start,t_end,dt):
-      
-      #xn = xn + dt * f(t,xn) #explicit euler
-      x = RK4(x,t,dt,f) #explicit Runge-Kutta 4 (RK4)
+      #x = x + dt * self.f(t,x) #explicit euler
+      x = RK4(x,t,dt,self.f) #explicit Runge-Kutta 4 (RK4)
      
       self.fmiCompletedIntegratorStep()
       
@@ -335,23 +353,41 @@ myfmu = fmu("./efunc.fmu")
 #print(myfmu.getOutputNames())
 names=list(myfmu.getContinuousVariables().values())
 #names=myfmu.getStateNames()
-t_end = 10.0
-res=myfmu.simulate(dt=0.1, t_end=t_end,varnames=names)
 
 
-import matplotlib.pyplot as plt
+import scipy
+from scipy.integrate import ode
+
+f = myfmu.f #loaded FMU
+t0 = 0.0
+y0, status, eventInfo = myfmu.initialize(0.0)
+
+r = ode(f).set_integrator('zvode', method='bdf')
+r.set_initial_value(y0, t0)
+t1 = 10
+dt = 1
+while r.successful() and r.t < t1:
+    r.integrate(r.t+dt)
+    print("{}  {}".format(r.t, r.y))
 
 
-x = np.linspace(0.0,t_end,100.0)
-plt.plot(x,np.exp(x))
-def plot():
-  for i,vals in enumerate(res[:,1:].T):
-    plt.plot(res[:,0],vals,label=names[i])
+#t_end = 10.0
+#res = myfmu.simulate(dt=1.0, t_end=t_end,varnames=names)
+
+
+#import matplotlib.pyplot as plt
+
+
+#x = np.linspace(0.0,t_end,100.0)
+#plt.plot(x,np.exp(x))
+#def plot():
+  #for i,vals in enumerate(res[:,1:].T):
+    #plt.plot(res[:,0],vals,label=names[i])
     
-  plt.legend()
-  plt.show()
+  #plt.legend()
+  #plt.show()
   
-plot()
+#plot()
 
 ##myfmu.plot(res[])
 
