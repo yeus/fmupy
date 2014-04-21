@@ -302,7 +302,7 @@ class fmu(FMUInterface.FMUInterface):
 
     res = [[0.0]+[self.getValue(varname) for varname in varnames]]
     #integration loop
-    for t in np.arange(t_start,t_end,dt):
+    for t in np.arange(t_start,t_end + dt,dt):
       #x = x + dt * self.f(t,x) #explicit euler
       x = RK4(x,t,dt,self.f) #explicit Runge-Kutta 4 (RK4)
      
@@ -341,43 +341,39 @@ class fmu(FMUInterface.FMUInterface):
 
 
 
-#myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_DoublePendulum.fmu")
-#myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_Pendulum.fmu")
+##myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_DoublePendulum.fmu")
+##myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_Pendulum.fmu")
+##myfmu = fmu("./FMU/Batteriebaustein.fmu")
+##myfmu = fmu("./Modelica_Mechanics_Rotational_Examples_First.fmu")
+#myfmu = fmu("./efunc.fmu")
 
-#myfmu = fmu("./FMU/Batteriebaustein.fmu")
-myfmu = fmu("./efunc.fmu")
-#res=myfmu.cosimulate()
+##myfmu.printvarprops()
+##print(myfmu.getOutputNames())
+#names=list(myfmu.getContinuousVariables().values())
+##names=myfmu.getStateNames()
 
-#myfmu = fmu("./Modelica_Mechanics_Rotational_Examples_First.fmu")
-#myfmu.printvarprops()
-#print(myfmu.getOutputNames())
-names=list(myfmu.getContinuousVariables().values())
-#names=myfmu.getStateNames()
+########################################################
+##simulation, using scipy integrators
+#import scipy
+#from scipy.integrate import ode
 
+#f = myfmu.f #loaded FMU
+#t0 = 0.0
+#y0, status, eventInfo = myfmu.initialize(0.0)
 
-import scipy
-from scipy.integrate import ode
+#r = ode(f).set_integrator('zvode', method='bdf')
+#r.set_initial_value(y0, t0)
+#t1 = 10
+#dt = 1
+#while r.successful() and r.t < t1:
+    #r.integrate(r.t+dt)
+    #print("{}  {}".format(r.t, r.y))
+#######################################################
 
-f = myfmu.f #loaded FMU
-t0 = 0.0
-y0, status, eventInfo = myfmu.initialize(0.0)
-
-r = ode(f).set_integrator('zvode', method='bdf')
-r.set_initial_value(y0, t0)
-t1 = 10
-dt = 1
-while r.successful() and r.t < t1:
-    r.integrate(r.t+dt)
-    print("{}  {}".format(r.t, r.y))
-
-
+#simulation with generic solvers
 #t_end = 10.0
 #res = myfmu.simulate(dt=1.0, t_end=t_end,varnames=names)
-
-
 #import matplotlib.pyplot as plt
-
-
 #x = np.linspace(0.0,t_end,100.0)
 #plt.plot(x,np.exp(x))
 #def plot():
@@ -389,24 +385,4 @@ while r.successful() and r.t < t1:
   
 #plot()
 
-##myfmu.plot(res[])
-
-##numpy.savetxt("foo.csv", a, delimiter=",")
-
-##myfmu.changedStartValue["x"]=3.0
-
-##myfmu.fmiTerminate()
-##myfmu.free()
-
-
-#initialisation:
-#print(interface.description.numberOfContinuousStates)
-#.fmiSetContinuousStates(cs)
-#x0 = interface.fmiGetContinuousStates()
-
-#print(interface.description.description)
-#print(x0)
-#print(interface.fmiGetModelTypesPlatform())
-#print(interface.fmiGetVersion())
-#simulation loop:
 

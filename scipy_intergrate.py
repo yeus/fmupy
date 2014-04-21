@@ -1,65 +1,45 @@
-#myfmu = fmu("./FMU/Batteriebaustein.fmu")
-myfmu = fmu("./efunc.fmu")
-#res=myfmu.cosimulate()
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-#myfmu = fmu("./Modelica_Mechanics_Rotational_Examples_First.fmu")
-#myfmu.printvarprops()
-#print(myfmu.getOutputNames())
-names=list(myfmu.getContinuousVariables().values())
-#names=myfmu.getStateNames()
-
-
+from fmusim import *
+import matplotlib.pyplot as plt
 import scipy
 from scipy.integrate import ode
 
+myfmu = fmu("./efunc.fmu")
+names=list(myfmu.getContinuousVariables().values())
+
 f = myfmu.f #loaded FMU
-t0 = 0.0
+t0,t1 = 0.0,10.0
+dt=1.0
 y0, status, eventInfo = myfmu.initialize(0.0)
 
-r = ode(f).set_integrator('zvode', method='bdf')
+#initialize scipy ode solver
+r = ode(f).set_integrator('dopri5') #more methods: http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.ode.html#scipy.integrate.ode
 r.set_initial_value(y0, t0)
-t1 = 10
-dt = 1
-while r.successful() and r.t < t1:
-    r.integrate(r.t+dt)
-    print("{}  {}".format(r.t, r.y))
+t , y = [t0],[y0] 
+for tn in np.arange(t0,t1+dt,dt):
+    r.integrate(tn)
+    y += [r.y]
+    t += [r.t]
+    #if not r.successful(): break
+    myfmu.fmiCompletedIntegratorStep()
 
-
-#t_end = 10.0
-#res = myfmu.simulate(dt=1.0, t_end=t_end,varnames=names)
-
-
-#import matplotlib.pyplot as plt
-
-
-#x = np.linspace(0.0,t_end,100.0)
-#plt.plot(x,np.exp(x))
-#def plot():
-  #for i,vals in enumerate(res[:,1:].T):
-    #plt.plot(res[:,0],vals,label=names[i])
-    
-  #plt.legend()
-  #plt.show()
+####################################
+#plot result
+y = np.array(y)
+x = np.linspace(0.0,10.0,100.0)
+plt.plot(x,np.exp(x))
+def plot():
+  #plot state variables
+  for i in y:
+    plt.plot(t,y)
   
-#plot()
-
-##myfmu.plot(res[])
-
-##numpy.savetxt("foo.csv", a, delimiter=",")
-
-##myfmu.changedStartValue["x"]=3.0
-
-##myfmu.fmiTerminate()
-##myfmu.free()
-
-
-#initialisation:
-#print(interface.description.numberOfContinuousStates)
-#.fmiSetContinuousStates(cs)
-#x0 = interface.fmiGetContinuousStates()
-
-#print(interface.description.description)
-#print(x0)
-#print(interface.fmiGetModelTypesPlatform())
-#print(interface.fmiGetVersion())
-#simulation loop:
+  #plot only specific variables
+  #for i,vals in enumerate(res[0]):
+    #plt.plot(t,y,vals,label=names[i])
+    
+  plt.legend()
+  plt.show()
+  
+plot()
