@@ -139,12 +139,13 @@ class FMUInterface(object):
         ''' Just a little sanity check - standard definition says file name and FMU-name have to be the same '''
         print((self.description.modelIdentifier))
         print((fileName))
-        if re.match(r'.*/(.*?).fmu$', fileName).group(1) != self.description.modelIdentifier:
-             print("attention!, name and model identifier differ: {} and {}".format(fileName,self.description.modelIdentifier))
+        #######################following code has bugs (regexp does not work in case nothing is found)
+        #if re.match(r'.*/(.*?).fmu$', fileName).group(1) != self.description.modelIdentifier:
+            #print("attention!, name and model identifier differ: {} and {}".format(fileName,self.description.modelIdentifier))
         #    raise FMUError.FMUError('FMU file corrupted!\nFile name and model identifier differ: ' + re.match(r'.*/(.*?).fmu$', fileName).group(1) + ' vs. ' + self.description.modelIdentifier + '\n')
+        ########################## end bugs
 
         self._InstantiateModel()
-        print("model instantiated")
         self._createCInterface()
 
     def _assembleBinaryName(self, modelName):
@@ -284,6 +285,8 @@ class FMUInterface(object):
           
           if self._modelInstancePtr == None:
               raise FMUError.FMUError('Instantiation of me FMU failed.\n')
+            
+        print("model instantiated")
 
     def free(self):
         ''' Call FMU destructor before being destructed. Just cleaning up. '''

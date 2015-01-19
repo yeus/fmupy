@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
+#
+#
+#
 
 # filename: contsim.py
 # author: - Thomas Meschede
@@ -27,8 +29,8 @@ import types
 
 
 class fmu(FMUInterface.FMUInterface):
-  def __init__(self, file):
-    super(fmu, self).__init__(file,loggingOn=True) #init fmu interface
+  def __init__(self, file, logging = True):
+    super(fmu, self).__init__(file,loggingOn = logging) #init fmu interface
     
     self.changedStartValue={}
 
@@ -176,7 +178,6 @@ class fmu(FMUInterface.FMUInterface):
       for key,var in self.description.scalarVariables.items():
           #if var.causality=='output':
             print("{:<40}{v.valueReference:<30}{v.alias:<20}{v.variability}".format(key,v=var))#key, var.valueReference, var.alias, var.variability, var.description, var.causality,var.directDependency,  var.type)
-            #if key[0]=='_': key=key[1:]  #matplotlib labels don#t recognize '_'
             #names[var.valueReference]=key
               
       return names      
@@ -194,7 +195,6 @@ class fmu(FMUInterface.FMUInterface):
       for key,var in self.description.scalarVariables.items():
           if var.causality=='output':
             #print(key, var.valueReference, var.alias, var.variability, var.description, var.causality,var.directDependency,  var.type)
-            if key[0]=='_': key=key[1:]  #matplotlib labels don#t recognize '_'
             names[var.valueReference]=key
               
       return names      
@@ -208,7 +208,6 @@ class fmu(FMUInterface.FMUInterface):
       for key,var in self.description.scalarVariables.items():
           if var.valueReference in references and var.variability=='continuous':
             #print(key, var.valueReference, var.alias, var.variability, var.description, var.causality,var.directDependency,  var.type)
-            if key[0]=='_': key=key[1:]  #matplotlib labels don#t recognize '_'
             names[var.valueReference]=key
               
       return names
@@ -224,7 +223,6 @@ class fmu(FMUInterface.FMUInterface):
       for key,var in self.description.scalarVariables.items():
           if variability == 'all' or var.variability==variability:
             #print(key, var.valueReference, var.alias, var.variability, var.description, var.causality,var.directDependency,  var.type)
-            if key[0]=='_': key=key[1:]  #matplotlib labels don#t recognize '_'
             names[var.valueReference]=key
               
       return names
@@ -331,7 +329,9 @@ class fmu(FMUInterface.FMUInterface):
     while tc < t_end:
       step=[[tc]+[self.getValue(varname) for varname in varnames]]
       
-      self.fmiDoStep(tc, dt, True)
+      #from the documentation:
+      # fmiStatus fmiDoStep( fmiComponent c, fmiReal currentCommunicationPoint,fmiReal communicationStepSize, fmiBoolean newStep);
+      self.fmiDoStep(tc, dt, True) #"newstep = True" because master accepts last simulation step
       res+=step
       tc+=dt
 
@@ -346,36 +346,20 @@ class fmu(FMUInterface.FMUInterface):
 ##myfmu = fmu("./FMU/Batteriebaustein.fmu")
 ##myfmu = fmu("./Modelica_Mechanics_Rotational_Examples_First.fmu")
 #myfmu = fmu("./efunc.fmu")
+#myfmu = fmu("satcomponents_blocks_noise_sampled.fmu", logging = False)
+#myfmu = fmu("rosmo_ExternalLibraries.fmu", logging = True)
 
 ##myfmu.printvarprops()
 ##print(myfmu.getOutputNames())
 #names=list(myfmu.getContinuousVariables().values())
 ##names=myfmu.getStateNames()
 
-########################################################
-##simulation, using scipy integrators
-#import scipy
-#from scipy.integrate import ode
-
-#f = myfmu.f #loaded FMU
-#t0 = 0.0
-#y0, status, eventInfo = myfmu.initialize(0.0)
-
-#r = ode(f).set_integrator('zvode', method='bdf')
-#r.set_initial_value(y0, t0)
-#t1 = 10
-#dt = 1
-#while r.successful() and r.t < t1:
-    #r.integrate(r.t+dt)
-    #print("{}  {}".format(r.t, r.y))
-#######################################################
 
 #simulation with generic solvers
 #t_end = 10.0
-#res = myfmu.simulate(dt=1.0, t_end=t_end,varnames=names)
+#res = myfmu.simulate(dt=0.01, t_end=t_end)
+
 #import matplotlib.pyplot as plt
-#x = np.linspace(0.0,t_end,100.0)
-#plt.plot(x,np.exp(x))
 #def plot():
   #for i,vals in enumerate(res[:,1:].T):
     #plt.plot(res[:,0],vals,label=names[i])
