@@ -65,6 +65,10 @@ class fmu(FMUInterface.FMUInterface):
 #                  names.append('')
 #      return names
 
+  def getInputVariables(self):
+    vars = [(name, var.type.start) for (name, var) in self.description.scalarVariables.items() if var.causality == 'input']
+    return vars
+
   def getValue(self, name):
       ''' Returns the values of the variables given in name;
           name is either a String or a list of Strings.            
@@ -275,15 +279,18 @@ class fmu(FMUInterface.FMUInterface):
       
       return ny
 
-  def simulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[]):
+  def single_timestep(self, dt = 0.01):
+    pass
+
+  def simulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[], inputfs = []):
     if self._mode == 'me':
       print("run me-simulation")
-      return self.mesimulate(dt, t_start, t_end, varnames)
+      return self.mesimulate(dt, t_start, t_end, varnames, inputfs =  inputfs)
     elif self._mode == 'cs':
       print("run co-simulation")
-      return self.cosimulate(dt, t_start, t_end, varnames)
+      return self.cosimulate(dt, t_start, t_end, varnames, inputfs = inputfs)
 
-  def mesimulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[]):
+  def mesimulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[], inputfs = []):
     def RK4(y,t,h,f):
         h05 = h * .5
         t05 = t + h05
@@ -320,19 +327,21 @@ class fmu(FMUInterface.FMUInterface):
     
     return np.array(res)
 
-  def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 1.0, varnames=[]):
+  def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 1.0, varnames=[], inputfs = []):
     tc = t_start #current master time
     
     self.fmiInitializeSlave(t_start, True, t_end)
     res=[]
     
     while tc < t_end:
-      step=[[tc]+[self.getValue(varname) for varname in varnames]]
+      for name,func in inputfs.items():
+        self.setValue(name, func(tc))
       
+      step=[[tc]+[self.getValue(varname) for varname in varnames]]
+      res+=step      
       #from the documentation:
       # fmiStatus fmiDoStep( fmiComponent c, fmiReal currentCommunicationPoint,fmiReal communicationStepSize, fmiBoolean newStep);
       self.fmiDoStep(tc, dt, True) #"newstep = True" because master accepts last simulation step
-      res+=step
       tc+=dt
 
     self.fmiTerminateSlave()
