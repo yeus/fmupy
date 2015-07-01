@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/home/tom/build/jmodelica/bin/jm_python.sh
 # -*- coding: utf-8 -*-
 
 
@@ -25,20 +25,28 @@ import time
 
 import types
 
+#clean modelica files from annotations:  annotation\(([^;]|[^\)].|\n)*[\);]+
 
 # Import the compiler function
 from pymodelica import compile_fmu
 
 #Specify Modelica model and model file (.mo or .mop)
-mo_file = '../../../model/satcomponents/satcomponents.mo'
-model_name = 'satcomponents.blocks.sample_test' #noisetest
+#mo_file = '../../../model/satcomponents/modelicatests.mo' #satcomponents #buildingblocks
+#model_name = 'modelicatests.constraints_test' #noisetest #sample_test #satcomponents.blocks.noise_sampled
 #mo_file = '../../../model/satcomponents/buildingblocks.mo'
 #model_name = 'buildingblocks.verosim_basic'
+mo_file = '../model/satcomponents/ibossmo.mo'
+#model_name = 'ibossmo.buildingblocks.verosim_basic'
+#model_name = 'ibossmo.buildingblocks.examples.verosim_block'
+model_name = 'ibossmo.components.Examples.interfacecomplete_with_dcdc'
+#mo_file = '../model/satcomponents/modelicatests.mo'
+#model_name = 'modelicatests.multidimensional_motor'
+
 
 
 # Compile the model and save the return argument, which is the file name of the FMU
-#my_fmu = compile_fmu(model_name,mo_file, target='me',compiler_options = {'extra_lib_dirs':'../../../model/satcomponents'})
-my_fmu = compile_fmu(model_name, mo_file, target='cs',compiler_options = {'extra_lib_dirs':'../../../model/satcomponents'})  #target='cs'  for cosimulation, otherwise, just for model exchange
+#my_fmu = compile_fmu(model_name,mo_file, target='me',compiler_options = {'extra_lib_dirs':'../../../model/satcomponents'}, version = '1.0')
+my_fmu = compile_fmu(model_name, mo_file, target='cs',compiler_options = {'extra_lib_dirs':'../model/satcomponents'}, version = '1.0')  #target='cs'  for cosimulation, otherwise, just for model exchange
 
 # Compile an example model from the MSL
 #fmu1 = compile_fmu('Modelica.Mechanics.Rotational.Examples.First')
