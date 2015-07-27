@@ -17,7 +17,7 @@
 
 
 import numpy as np
-import scipy
+import scipy as sp
 import fmusim
 from scipy import interpolate
 
