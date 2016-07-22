@@ -35,11 +35,11 @@ from pymodelica import compile_fmu
 #model_name = 'modelicatests.constraints_test' #noisetest #sample_test #satcomponents.blocks.noise_sampled
 #mo_file = '../../../model/satcomponents/buildingblocks.mo'
 #model_name = 'buildingblocks.verosim_basic'
-mo_file = '../model/satcomponents/ibossmo.mo'
+#mo_file = '../model/satcomponents/ibossmo.mo'
 #model_name = 'ibossmo.buildingblocks.verosim_basic'
 #model_name = 'ibossmo.buildingblocks.examples.verosim_block'
 #model_name = 'ibossmo.components.Examples.interfacecomplete_with_dcdc'
-#mo_file = '../model/satcomponents/modelicatests.mo'
+mo_file = '../model/satcomponents/modelicatests.mo'
 model_name = 'modelicatests.multidimensional_motor'
 
 
