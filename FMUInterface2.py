@@ -117,7 +117,7 @@ class _fmiCallbackFunctions(ctypes.Structure):
 
 
 
-class FMUInterface:
+class FMUInterface(object):
     ''' This class encapsulates the FMU C-Interface
         all fmi* functions are a public interface to the FMU-functions        
     '''
@@ -240,8 +240,13 @@ class FMUInterface:
     def freeLibrary(self):
         ''' Call FMU destructor before being destructed. Just cleaning up. '''
         if hasattr(self, '_library'):
-            self.freeModelInstance()            
-            _ctypes.FreeLibrary(self._libraryHandle)        
+            self.freeModelInstance()
+            if platform.system() == 'Linux':
+                _ctypes.dlclose(self._libraryHandle)
+            elif platform.system() == 'Windows':
+                _ctypes.FreeLibrary(self._libraryHandle)    #only for windows  
+            else:
+                raise FMUError.FMUError('Unknown platform: %s\n' % platform.system())
 
     def free(self):        
         self.freeLibrary()

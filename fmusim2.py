@@ -22,19 +22,12 @@ in a python class. Its the main class that shoudl be used by 3rd party applicati
 
 import numpy as np
 
-import FMUInterface
-from FMUInterface import fmiTrue, fmiFalse
+import FMUInterface2
+from FMUInterface2 import fmiTrue, fmiFalse
 
-from operator import itemgetter
-
-import time
-
-import types
-
-
-class fmu(FMUInterface.FMUInterface):
-  def __init__(self, file, logging = True):
-    super(fmu, self).__init__(file,loggingOn = logging) #init fmu interface
+class fmu(FMUInterface2.FMUInterface):
+  def __init__(self, file, loggingOn = True):
+    super(fmu, self).__init__(file, loggingOn = loggingOn, preferredFmiType="cs") #init fmu interface
     
     self.changedStartValue={}
 
@@ -363,9 +356,28 @@ class fmu(FMUInterface.FMUInterface):
 ##myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_Pendulum.fmu")
 ##myfmu = fmu("./FMU/Batteriebaustein.fmu")
 ##myfmu = fmu("./Modelica_Mechanics_Rotational_Examples_First.fmu")
-#myfmu = fmu("./efunc.fmu")
+fmu = fmu("./FMU/efunc.fmu")
 #myfmu = fmu("satcomponents_blocks_noise_sampled.fmu", logging = False)
 #myfmu = fmu("rosmo_ExternalLibraries.fmu", logging = True)
+
+fmu.fmiInstantiate()
+fmu.fmiSetupExperiment(fmiTrue, 1e-6, 0.0, fmiTrue, 1.0)
+fmu.fmiEnterInitializationMode()
+fmu.fmiExitInitializationMode()   
+status, state = fmu.fmiGetFMUstate()
+print status, state
+
+fmu.fmiSetFMUstate(state)
+
+
+status, size = fmu.fmiSerializedFMUstateSize(state)
+status, vec = fmu.fmiSerializeFMUstate(state, size)
+
+status, state = fmu.fmiFreeFMUstate(state)
+print status, state  
+
+
+fmu.free()
 
 ##myfmu.printvarprops()
 ##print(myfmu.getOutputNames())
