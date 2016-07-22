@@ -17,339 +17,9 @@
 
 
 import numpy as np
-
-import FMUInterface
-from FMUInterface import fmiTrue, fmiFalse
-
-from operator import itemgetter
-
-import time
-
-import types
-
-
-class fmu(FMUInterface.FMUInterface):
-  def __init__(self, file, logging = True):
-    super(fmu, self).__init__(file,loggingOn = logging) #init fmu interface
-    
-    self.changedStartValue={}
-
-#  def getStateNames(self):
-#      ''' Returns a list of Strings: the names of all states in the model.
-#      '''
-#      references = self.fmiGetStateValueReferences()
-#      allVars = list(self.description.scalarVariables.items())
-#      referenceListSorted = [(index, var[1].valueReference) for index, var in enumerate(allVars)]
-#      referenceListSorted.sort(key=itemgetter(1))
-#      referenceList = [r[1] for r in referenceListSorted]
-#
-#      names = []
-#      for ref in references:
-#          if ref == -1:
-#              # No reference available -> name is hidden
-#              names.append('')
-#          else:
-#              k = referenceList.count(ref)
-#              if k > 0:
-#                  index = -1
-#                  i = 0
-#                  while i < k:
-#                      i += 1
-#                      index = referenceList.index(ref, index + 1)
-#                      if allVars[referenceListSorted[index][0]][1].alias is None:
-#                          name = allVars[referenceListSorted[index][0]][0]
-#                          names.append(name)
-#                          break
-#              else:
-#                  # Reference not found. Should not occur.
-#                  names.append('')
-#      return names
-
-  def getInputVariables(self):
-    vars = [(name, var.type.start) for (name, var) in self.description.scalarVariables.items() if var.causality == 'input']
-    return vars
-
-  def getValue(self, name):
-      ''' Returns the values of the variables given in name;
-          name is either a String or a list of Strings.            
-      '''
-      if type(name) == list:
-          n = len(name)
-          nameList = True
-          names = name
-      else:
-          n = 1
-          nameList = False
-          names = [name]
-
-      iReal = []
-      iInteger = []
-      iBoolean = []
-      iString = []
-      refReal = []
-      refInteger = []
-      refBoolean = []
-      refString = []
-      for i, x in enumerate(names):
-          dataType = self.description.scalarVariables[x].type.type
-          if dataType == 'Real':
-              refReal.append(self.description.scalarVariables[x].valueReference)
-              iReal.append(i)
-          elif dataType == 'Integer':
-              refInteger.append(self.description.scalarVariables[x].valueReference)
-              iInteger.append(i)
-          elif dataType == 'Boolean':
-              refBoolean.append(self.description.scalarVariables[x].valueReference)
-              iBoolean.append(i)
-          elif dataType == 'String':
-              refString.append(self.description.scalarVariables[x].valueReference)
-              iString.append(i)
-
-      #TODO: hier werden Werte für bestimmte Variablen abgerufen.
-      retValue = list(range(n))
-      k = len(refReal)
-      if k > 0:
-          ref = FMUInterface.createfmiReferenceVector(k)
-          for i in range(k):
-              ref[i] = refReal[i]
-          values = self.fmiGetReal(ref)
-          for i in range(k):
-              retValue[iReal[i]] = values[i]
-      k = len(refInteger)
-      if k > 0:
-          ref = FMUInterface.createfmiReferenceVector(k)
-          for i in range(k):
-              ref[i] = refInteger[i]
-          values = self.fmiGetInteger(ref)
-          for i in range(k):
-              retValue[iInteger[i]] = values[i]
-      k = len(refBoolean)
-      if k > 0:
-          ref = FMUInterface.createfmiReferenceVector(k)
-          for i in range(k):
-              ref[i] = refBoolean[i]
-          values = self.fmiGetBoolean(ref)
-          for i in range(k):
-              retValue[iBoolean[i]] = values[i]
-      k = len(refString)
-      if k > 0:
-          ref = FMUInterface.createfmiReferenceVector(k)
-          for i in range(k):
-              ref[i] = refString[i]
-          values = self.fmiGetString(ref)
-          for i in range(k):
-              retValue[iString[i]] = values[i]
-
-      if nameList:
-          return retValue
-      else:
-          return retValue[0]
-    
-  def setValue(self, valueName, valueValue):
-      ''' set the variable valueName to valueValue
-          @param valueName: name of variable to be set
-          @type valueName: string
-          @param valueValue: new value
-          @type valueValue: any type castable to the type of the variable valueName
-      '''
-      ScalarVariableReferenceVector = FMUInterface.createfmiReferenceVector(1)
-      ScalarVariableReferenceVector[0] = self.description.scalarVariables[valueName].valueReference
-      if self.description.scalarVariables[valueName].type.type == 'Real':
-          ScalarVariableValueVector = FMUInterface.createfmiRealVector(1)
-          ScalarVariableValueVector[0] = float(valueValue)
-          self.fmiSetReal(ScalarVariableReferenceVector, ScalarVariableValueVector)
-      elif self.description.scalarVariables[valueName].type.type in ['Integer', 'Enumeration']:
-          ScalarVariableValueVector = FMUInterface.createfmiIntegerVector(1)
-          ScalarVariableValueVector[0] = int(valueValue)
-          self.fmiSetInteger(ScalarVariableReferenceVector, ScalarVariableValueVector)
-      elif self.description.scalarVariables[valueName].type.type == 'Boolean':
-          ScalarVariableValueVector = FMUInterface.createfmiBooleanVector(1)
-          if valueValue == "true":
-              ScalarVariableValueVector[0] = fmiTrue
-          else:
-              ScalarVariableValueVector[0] = fmiFalse
-          self.fmiSetBoolean(ScalarVariableReferenceVector, ScalarVariableValueVector)
-      elif self.description.scalarVariables[valueName].type.type == 'String':
-          ScalarVariableValueVector = FMUInterface.createfmiStringVector(1)
-          ScalarVariableValueVector[0] = str(valueValue)
-          self.fmiSetString(ScalarVariableReferenceVector, ScalarVariableValueVector)
-
-
-  def printvarprops(self):
-      ''' Returns a list of Strings: the names of all output variables in the model.
-      '''
-      names = {}
-      for key,var in self.description.scalarVariables.items():
-          #if var.causality=='output':
-            print("{:<40}{v.valueReference:<30}{v.alias:<20}{v.variability}".format(key,v=var))#key, var.valueReference, var.alias, var.variability, var.description, var.causality,var.directDependency,  var.type)
-            #names[var.valueReference]=key
-              
-      return names      
-
-  def getContinuousVariables(self):
-      if self._mode is 'me':
-        return self.getVariables('continuous')
-      elif self._mode is 'cs':
-        return self.getVariables('continuous')
-
-  def getOutputNames(self):
-      ''' Returns a list of Strings: the names of all output variables in the model.
-      '''
-      names = {}
-      for key,var in self.description.scalarVariables.items():
-          if var.causality=='output':
-            #print(key, var.valueReference, var.alias, var.variability, var.description, var.causality,var.directDependency,  var.type)
-            names[var.valueReference]=key
-              
-      return names      
-
-  def getStateNames(self):
-      ''' Returns a list of Strings: the names of all states in the model.
-      '''
-      references = self.fmiGetStateValueReferences()
-
-      names = {}
-      for key,var in self.description.scalarVariables.items():
-          if var.valueReference in references and var.variability=='continuous':
-            #print(key, var.valueReference, var.alias, var.variability, var.description, var.causality,var.directDependency,  var.type)
-            names[var.valueReference]=key
-              
-      return names
-
-  def getVariables(self, variability = 'all', causality = 'all'):
-      ''' 
-	variability:  return variables with variability property
-	Returns:  
-	  a list of Strings: the namesof the variables with a certain property
-      '''
-
-      names = {}
-      for key,var in self.description.scalarVariables.items():
-          if variability == 'all' or var.variability==variability:
-            #print(key, var.valueReference, var.alias, var.variability, var.description, var.causality,var.directDependency,  var.type)
-            names[var.valueReference]=key
-              
-      return names
-
-  def initialize(self, t, errorTolerance=1e-9):
-      ''' Initializes the model at time = t with
-          changed start values given by the dictionary
-          self.changedStartValue.
-          The function returns a status flag and the next time event.
-      '''
-      
-      # Terminate last simulation in model
-      #self.interface.fmiTerminate()
-      #print("Set start time")
-      #self.interface.fmiSetTime(t)
-      # Set start values
-      #self._setDefaultStartValues()
-      for name in list(self.changedStartValue.keys()):
-          self.setValue(name, self.changedStartValue[name])
-      # Initialize model
-      eventInfo, status = self.fmiInitialize(fmiTrue, errorTolerance)
-      x0 = self.fmiGetContinuousStates()
-      return x0, status, eventInfo
-
-  def f(self,t,y):
-      """ return a function which can be used for external solver
-      
-      the example (just small differences, no jacobian) from the scipy intergrator:
-      
-      http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.ode.html#scipy.integrate.ode
-      
-      The integration:
-         f = myfmu.f #loaded FMU
-         t0 = 0.0
-         y0 = myfmu.initialize(0.0)
-
-         r = ode(f).set_integrator('zvode', method='bdf')
-         r.set_initial_value(y0, t0)
-         t1 = 10
-         dt = 1
-         while r.successful() and r.t < t1:
-             r.integrate(r.t+dt)
-             print("%g %g" % (r.t, r.y))
-      """
-      
-      self.fmiSetTime(t)
-      self.fmiSetContinuousStates(y)
-      
-      ny = self.fmiGetDerivatives()
-      
-      return ny
-
-  def single_timestep(self, dt = 0.01):
-    pass
-
-  def simulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[], inputfs = []):
-    if self._mode == 'me':
-      print("run me-simulation")
-      return self.mesimulate(dt, t_start, t_end, varnames, inputfs =  inputfs)
-    elif self._mode == 'cs':
-      print("run co-simulation")
-      return self.cosimulate(dt, t_start, t_end, varnames, inputfs = inputfs)
-
-  def mesimulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[], inputfs = []):
-    def RK4(y,t,h,f):
-        h05 = h * .5
-        t05 = t + h05
-        k1=f(t,y);
-        k2=f(t05,y+h05*k1);
-        k3=f(t05,y+h05*k2);
-        k4=f(t+h,y+h*k3);
-        yn=y+h/6.0*(k1+2*(k2+k3)+k4)
-        return yn
-
-    self.fmiSetTime(0.0)
-
-    x,status,eventInfo = self.initialize(0.0)
-
-    res = [[0.0]+[self.getValue(varname) for varname in varnames]]
-    #integration loop
-    for t in np.arange(t_start,t_end + dt,dt):
-      #x = x + dt * self.f(t,x) #explicit euler
-      x = RK4(x,t,dt,self.f) #explicit Runge-Kutta 4 (RK4)
-     
-      self.fmiCompletedIntegratorStep()
-      
-      #save results in array
-      #print(t,x,dx)
-      step=[[t+dt]+[self.getValue(varname) for varname in varnames]]
-      if np.nan in step:
-        print(step)
-        break
-      #time.sleep(dt)
-      res+=step
-      
-    
-    self.fmiTerminate()
-    
-    return np.array(res)
-
-  def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 1.0, varnames=[], inputfs = []):
-    tc = t_start #current master time
-    
-    self.fmiInitializeSlave(t_start, True, t_end)
-    res=[]
-    
-    while tc < t_end:
-      for name,func in inputfs.items():
-        self.setValue(name, func(tc))
-      
-      step=[[tc]+[self.getValue(varname) for varname in varnames]]
-      res+=step      
-      #from the documentation:
-      # fmiStatus fmiDoStep( fmiComponent c, fmiReal currentCommunicationPoint,fmiReal communicationStepSize, fmiBoolean newStep);
-      info = self.fmiDoStep(tc, dt, True) #"newstep = True" because master accepts last simulation step
-      if info != 0: print(info)
-      tc+=dt
-
-    self.fmiTerminateSlave()
-    
-    return np.array(res)
-
-
+import scipy as sp
+import fmusim
+from scipy import interpolate
 
 ##myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_DoublePendulum.fmu")
 ##myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_Pendulum.fmu")
@@ -358,25 +28,34 @@ class fmu(FMUInterface.FMUInterface):
 #myfmu = fmu("./efunc.fmu")
 #myfmu = fmu("satcomponents_blocks_noise_sampled.fmu", logging = False)
 #myfmu = fmu("rosmo_ExternalLibraries.fmu", logging = True)
+myfmu = fmusim.fmu("iboss_vti.fmu", logging = True)
+
 
 ##myfmu.printvarprops()
 ##print(myfmu.getOutputNames())
-#names=list(myfmu.getContinuousVariables().values())
+names=list(myfmu.getOutputNames().values())
 ##names=myfmu.getStateNames()
+names=[#'iXp.comm_out.tmp',
+        'iXp.comm_out.mi_pos',"set_mi_pos.[1]"]
 
+def intpl1d(table):
+    table = np.array(table)
+    return interpolate.interp1d(table[:,0],table[:,1], kind = 0)#‘linear’, ‘nearest’, ‘zero’, ‘slinear’, ‘quadratic, ‘cubic’ where ‘slinear’, ‘quadratic’ and ‘cubic’ 
 
 #simulation with generic solvers
-#t_end = 10.0
-#res = myfmu.simulate(dt=0.01, t_end=t_end)
+t_end = 100.0
+ctrlmi = intpl1d([[0.0,0.0],[10.0,0.5],[1000000.0,1.0]])
+infuncs = {'set_mi_pos.[1]':ctrlmi}
+res = myfmu.simulate(dt=1.0, t_end=t_end, varnames = names, inputfs = infuncs)
 
-#import matplotlib.pyplot as plt
-#def plot():
-  #for i,vals in enumerate(res[:,1:].T):
-    #plt.plot(res[:,0],vals,label=names[i])
+import matplotlib.pyplot as plt
+def plot():
+  for i,vals in enumerate(res[:,1:].T):
+    plt.plot(res[:,0],vals,label=names[i])
     
-  #plt.legend()
-  #plt.show()
+  plt.legend()
+  plt.show()
   
-#plot()
+plot()
 
 

@@ -282,7 +282,7 @@ class fmu(FMUInterface.FMUInterface):
   def single_timestep(self, dt = 0.01):
     pass
 
-  def simulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[], inputfs = []):
+  def simulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[], inputfs = {}):
     if self._mode == 'me':
       print("run me-simulation")
       return self.mesimulate(dt, t_start, t_end, varnames, inputfs =  inputfs)
@@ -327,7 +327,7 @@ class fmu(FMUInterface.FMUInterface):
     
     return np.array(res)
 
-  def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 1.0, varnames=[], inputfs = []):
+  def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 1.0, varnames=[], inputfs = {}):
     tc = t_start #current master time
     
     self.fmiInitializeSlave(t_start, True, t_end)
@@ -342,7 +342,11 @@ class fmu(FMUInterface.FMUInterface):
       #from the documentation:
       # fmiStatus fmiDoStep( fmiComponent c, fmiReal currentCommunicationPoint,fmiReal communicationStepSize, fmiBoolean newStep);
       info = self.fmiDoStep(tc, dt, True) #"newstep = True" because master accepts last simulation step
-      if info != 0: print(info)
+      if info != 0: 
+        print(info)
+        if info == 3:
+          print("Detected infinite loop in calculation")
+          break
       tc+=dt
 
     self.fmiTerminateSlave()

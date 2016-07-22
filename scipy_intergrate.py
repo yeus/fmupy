@@ -8,7 +8,7 @@ from scipy.integrate import ode
 
 #myfmu = fmu("./FMU/om/buildingblocks_verosim_basic.fmu", logging=False) #turn logging off for faster calculation
 #myfmu = fmu("./FMU/om/satcomponents_blocks_noisetest.fmu", logging=False) #turn logging off for faster calculation
-myfmu = fmu("./satcomponents_blocks_sample_test.fmu", logging=False) #turn logging off for faster calculation
+myfmu = fmu("./ibossmo_components_Examples_interfacecomplete_with_dcdc.fmu", logging=False) #turn logging off for faster calculation
 contvars=list(myfmu.getContinuousVariables().values())
 statenames=list(myfmu.getStateNames().values())
 
