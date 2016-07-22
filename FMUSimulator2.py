@@ -138,11 +138,11 @@ class Model(SimulatorBase.Model):
             The function returns a status flag and the next time event.
         '''
         
-        self.interface.fmiInstantiate()
+        self.fmiInstantiate()
 
-        if self.interface.activeFmiType == 'me':    
+        if self.activeFmiType == 'me':    
             # Set start time
-            self.interface.fmiSetTime(tStart)
+            self.fmiSetTime(tStart)
             
         # Set start values
         self._setDefaultStartValues()
