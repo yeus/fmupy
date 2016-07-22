@@ -1,6 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-#
+'''
+This Code organizes the FMU Interfaces  "FMUInterface.py" and "FMIDescription.py" 
+in a python class. Its the main class that shoudl be used by 3rd party applications.
+
+'''
 #
 #
 
