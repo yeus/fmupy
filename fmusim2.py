@@ -417,7 +417,19 @@ while inloop:
       # Raise exception to abort simulation...
       finalize(None)
       raise(SimulatorBase.Stopping)
-  t += dt
+  elif status == 2:  # Discard
+      status, info = fmu.fmiGetBooleanStatus(3) # fmi2Terminated
+      if info == fmiTrue:
+          status, lastTime = fmu.fmiGetRealStatus(2)       # fmi2LastSuccessfulTime
+          t = lastTime
+          doLoop = False
+      else:
+          print("Not supported status in doStep at time = {:.2e}".format(t))
+          # Raise exception to abort simulation...
+          finalize()
+          raise(SimulatorBase.Stopping)   
+  elif status < 2:
+      t += dt
   if t > t_end: inloop = False
 
 status, state = fmu.fmiGetFMUstate()
