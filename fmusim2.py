@@ -21,13 +21,35 @@ in a python class. Its the main class that shoudl be used by 3rd party applicati
 
 
 import numpy as np
+import types
+import FMUInterface2 as fmu2
+from FMUInterface2 import fmiTrue, fmiFalse, fmiValueReference,fmiValueReferenceVector
+"""fmiFalse = 0
+fmiTrue = 1
+fmiReal = ctypes.c_double
+fmiInteger = ctypes.c_int
+fmiBoolean = ctypes.c_int
+fmiString = ctypes.c_char_p
+fmiRealVector = ctypes.POINTER(fmiReal)
+fmiIntegerVector = ctypes.POINTER(fmiInteger)
+fmiBooleanVector = ctypes.POINTER(fmiBoolean)
+fmiStringVector = ctypes.POINTER(fmiString)
+fmiBooleanPtr = ctypes.POINTER(fmiBoolean)
+fmiComponent = ctypes.c_void_p
+fmiComponentEnvironment = ctypes.c_void_p
+fmiStatus = ctypes.c_int
+fmiValueReference = ctypes.c_uint
+fmiValueReferenceVector = ctypes.POINTER(fmiValueReference)
+fmiType = ctypes.c_uint
+fmiFMUstate = ctypes.c_void_p
+fmiFMUstatePtr = ctypes.POINTER(fmiFMUstate)
+fmiByte = ctypes.c_char
+fmiByteVector = ctypes.POINTER(fmiByte)
+fmiStatusKind = ctypes.c_uint"""
 
-import FMUInterface2
-from FMUInterface2 import fmiTrue, fmiFalse
-
-class fmu(FMUInterface2.FMUInterface):
+class fmi(fmu2.FMUInterface):
   def __init__(self, file, loggingOn = True):
-    super(fmu, self).__init__(file, loggingOn = loggingOn, preferredFmiType="cs") #init fmu interface
+    super(fmi, self).__init__(file, loggingOn = loggingOn, preferredFmiType="cs") #init fmu interface
     
     self.changedStartValue={}
     
@@ -71,9 +93,9 @@ class fmu(FMUInterface2.FMUInterface):
 
   def getValue(self, name):
       ''' Returns the values of the variables given in name;
-          name is either a String or a list of Strings.            
+          name is either a String or a list of Strings.
       '''
-      if type(name) == list:
+      if types.TypeType(name) == types.ListType:
           n = len(name)
           nameList = True
           names = name
@@ -91,7 +113,7 @@ class fmu(FMUInterface2.FMUInterface):
       refBoolean = []
       refString = []
       for i, x in enumerate(names):
-          dataType = self.description.scalarVariables[x].type.type
+          dataType = self.description.scalarVariables[x].type.basicType
           if dataType == 'Real':
               refReal.append(self.description.scalarVariables[x].valueReference)
               iReal.append(i)
@@ -105,39 +127,38 @@ class fmu(FMUInterface2.FMUInterface):
               refString.append(self.description.scalarVariables[x].valueReference)
               iString.append(i)
 
-      #TODO: hier werden Werte für bestimmte Variablen abgerufen.
-      retValue = list(range(n))
+      retValue = range(n)
       k = len(refReal)
       if k > 0:
-          ref = FMUInterface.createfmiReferenceVector(k)
-          for i in range(k):
+          ref = fmu2.createfmiReferenceVector(k)
+          for i in xrange(k):
               ref[i] = refReal[i]
-          values = self.fmiGetReal(ref)
-          for i in range(k):
+          status, values = self.fmiGetReal(ref)
+          for i in xrange(k):
               retValue[iReal[i]] = values[i]
       k = len(refInteger)
       if k > 0:
-          ref = FMUInterface.createfmiReferenceVector(k)
-          for i in range(k):
+          ref = fmu2.createfmiReferenceVector(k)
+          for i in xrange(k):
               ref[i] = refInteger[i]
-          values = self.fmiGetInteger(ref)
-          for i in range(k):
+          status, values = self.fmiGetInteger(ref)
+          for i in xrange(k):
               retValue[iInteger[i]] = values[i]
       k = len(refBoolean)
       if k > 0:
-          ref = FMUInterface.createfmiReferenceVector(k)
-          for i in range(k):
+          ref = fmu2.createfmiReferenceVector(k)
+          for i in xrange(k):
               ref[i] = refBoolean[i]
-          values = self.fmiGetBoolean(ref)
-          for i in range(k):
+          status, values = self.fmiGetBoolean(ref)
+          for i in xrange(k):
               retValue[iBoolean[i]] = values[i]
       k = len(refString)
       if k > 0:
-          ref = FMUInterface.createfmiReferenceVector(k)
-          for i in range(k):
+          ref = fmu2.createfmiReferenceVector(k)
+          for i in xrange(k):
               ref[i] = refString[i]
-          values = self.fmiGetString(ref)
-          for i in range(k):
+          status, values = self.fmiGetString(ref)
+          for i in xrange(k):
               retValue[iString[i]] = values[i]
 
       if nameList:
@@ -403,7 +424,7 @@ dt = 0.1
 t = 0.0
 t_end= 10.0
 
-fmu = fmu("./FMU/efunc.fmu")
+fmu = fmi("./FMU/efunc.fmu",loggingOn = False)
 status,nextTimeEvent = fmu.initialize(0.0,10.0)
 
 if status > 1:
@@ -411,7 +432,8 @@ if status > 1:
 
 inloop = True
 while inloop:
-  status = fmu.fmiDoStep(t, dt, fmiTrue)            
+  status = fmu.fmiDoStep(t, dt, fmiTrue) 
+  print(fmu.getValue('x'))          
   if status > 2:
       print("error in doStep at time = {:.2e}".format(t))
       # Raise exception to abort simulation...
