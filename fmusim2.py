@@ -167,30 +167,30 @@ class fmi(fmu2.FMUInterface):
           return retValue[0]
     
   def setValue(self, valueName, valueValue):
-      ''' set the variable valueName to valueValue
-          @param valueName: name of variable to be set
-          @type valueName: string
-          @param valueValue: new value
-          @type valueValue: any type castable to the type of the variable valueName
-      '''
-      ScalarVariableReferenceVector = FMUInterface2.createfmiReferenceVector(1)
-      ScalarVariableReferenceVector[0] = self.description.scalarVariables[valueName].valueReference
-      if self.description.scalarVariables[valueName].type.basicType == 'Real':
-          ScalarVariableValueVector = FMUInterface2.createfmiRealVector(1)
-          ScalarVariableValueVector[0] = float(valueValue)
-          self.fmiSetReal(ScalarVariableReferenceVector, ScalarVariableValueVector)
-      elif self.description.scalarVariables[valueName].type.basicType in ['Integer', 'Enumeration']:
-          ScalarVariableValueVector = FMUInterface2.createfmiIntegerVector(1)
-          ScalarVariableValueVector[0] = int(valueValue)
-          self.fmiSetInteger(ScalarVariableReferenceVector, ScalarVariableValueVector)
-      elif self.description.scalarVariables[valueName].type.basicType == 'Boolean':
-          ScalarVariableValueVector = FMUInterface2.createfmiBooleanVector(1)
-          ScalarVariableValueVector[0] = fmiTrue if valueValue == "true" else fmiFalse
-          self.fmiSetBoolean(ScalarVariableReferenceVector, ScalarVariableValueVector)
-      elif self.description.scalarVariables[valueName].type.basicType == 'String':
-          ScalarVariableValueVector = FMUInterface2.createfmiStringVector(1)
-          ScalarVariableValueVector[0] = unicode(valueValue)
-          self.fmiSetString(ScalarVariableReferenceVector, ScalarVariableValueVector)
+        ''' set the variable valueName to valueValue
+            @param valueName: name of variable to be set
+            @type valueName: string
+            @param valueValue: new value
+            @type valueValue: any type castable to the type of the variable valueName
+        '''
+        ScalarVariableReferenceVector = fmu2.createfmiReferenceVector(1)
+        ScalarVariableReferenceVector[0] = self.description.scalarVariables[valueName].valueReference
+        if self.description.scalarVariables[valueName].type.basicType == 'Real':
+            ScalarVariableValueVector = fmu2.createfmiRealVector(1)
+            ScalarVariableValueVector[0] = float(valueValue)
+            self.fmiSetReal(ScalarVariableReferenceVector, ScalarVariableValueVector)
+        elif self.description.scalarVariables[valueName].type.basicType in ['Integer', 'Enumeration']:
+            ScalarVariableValueVector = fmu2.createfmiIntegerVector(1)
+            ScalarVariableValueVector[0] = int(valueValue)
+            self.fmiSetInteger(ScalarVariableReferenceVector, ScalarVariableValueVector)
+        elif self.description.scalarVariables[valueName].type.basicType == 'Boolean':
+            ScalarVariableValueVector = fmu2.createfmiBooleanVector(1)
+            ScalarVariableValueVector[0] = fmiTrue if valueValue == "true" else fmiFalse
+            self.fmiSetBoolean(ScalarVariableReferenceVector, ScalarVariableValueVector)
+        elif self.description.scalarVariables[valueName].type.basicType == 'String':
+            ScalarVariableValueVector = fmu2.createfmiStringVector(1)
+            ScalarVariableValueVector[0] = unicode(valueValue)
+            self.fmiSetString(ScalarVariableReferenceVector, ScalarVariableValueVector)
 
 
   def printvarprops(self):
@@ -430,10 +430,13 @@ status,nextTimeEvent = fmu.initialize(0.0,10.0)
 if status > 1:
     print("Model initialization failed. fmiStatus = " + str(status))
 
+fmu.setValue("x",3.1)
+
 inloop = True
 while inloop:
   status = fmu.fmiDoStep(t, dt, fmiTrue) 
-  print(fmu.getValue('x'))          
+  print(fmu.getValue(['x','der(x)']))
+  if t>3.0 and t<3.1: fmu.setValue("x",3.1)          
   if status > 2:
       print("error in doStep at time = {:.2e}".format(t))
       # Raise exception to abort simulation...
