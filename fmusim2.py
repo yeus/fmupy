@@ -376,13 +376,15 @@ class fmi(fmu2.FMUInterface):
     return np.array(res)
 
   def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 1.0, varnames=[], inputfs = {}):
-    status,nextTimeEvent = self.initialize(0.0,10.0)
+    status,nextTimeEvent = self.initialize(0.0,t_end)
     
     if status > 1:
         print("Model initialization failed. fmiStatus = " + str(status))
     
     self.setValue("x",3.1) ##setting input functions
     
+    
+    dtype = [("t","float")]+[(name,"float") for name in varnames]
     res=[]
     t = t_start #current master time
     inloop = True
@@ -392,8 +394,8 @@ class fmi(fmu2.FMUInterface):
       #  self.setValue(name, func(tc))
       status = self.fmiDoStep(t, dt, fmiTrue) 
       #print(self.getValue(['x','der(x)']))
-      step=[[t]+[self.getValue(varname) for varname in varnames]]
-      res+=step    
+      step=tuple([t]+[self.getValue(varname) for varname in varnames])
+      res.append(step)    
       if t>3.0 and t<3.1: self.setValue("x",3.1)          
       if status > 2:
           print("error in doStep at time = {:.2e}".format(t))
@@ -414,8 +416,8 @@ class fmi(fmu2.FMUInterface):
       elif status < 2:
           t += dt
       if t > t_end: inloop = False    
-        
-    return np.array(res)
+ 
+    return np.array(res, dtype = dtype).view(np.recarray)
     
 #status, state = fmu.fmiGetFMUstate()
 #print("status: {}, state: {}".format(status, state))

@@ -29,7 +29,7 @@ from scipy import interpolate
 #myfmu = fmu("rosmo_ExternalLibraries.fmu", logging = True)
 #myfmu = fmusim.fmu("FMU/iboss_vti.fmu", logging = True)
 #with fmusim2.fmi("./FMU/efunc.fmu", loggingOn = True) as myfmu:
-myfmu = fmusim2.fmi("./FMU/efunc.fmu", loggingOn = True)
+myfmu = fmusim2.fmi("./FMU/efunc.fmu", loggingOn = False)
 ##myfmu.printvarprops()
 ##print(myfmu.getOutputNames())
 #names=list(myfmu.getOutputNames().values())
@@ -37,7 +37,7 @@ myfmu = fmusim2.fmi("./FMU/efunc.fmu", loggingOn = True)
 #names = myfmu.getVariables()
 #print(names)
 #names=[#'iXp.comm_out.tmp','iXp.comm_out.mi_pos',"set_mi_pos.[1]"]
-names=['x']
+names=['x', 'der(x)']
 
 def intpl1d(table):
     table = np.array(table)
@@ -48,17 +48,17 @@ t_end = 10.0
 #ctrlmi = intpl1d([[0.0,0.0],[10.0,0.5],[20.0,0.1],[150.0,0.9],[1000000.0,1.0]])
 #infuncs = {'set_mi_pos.[1]':ctrlmi}
 #res = myfmu.simulate(dt=10.0, t_end=t_end, varnames = names, inputfs = infuncs)
-res = myfmu.simulate(dt=.1, t_end=t_end, varnames = names)
-
+res = myfmu.simulate(dt=1.0, t_end=t_end, varnames = names)
 
 import matplotlib.pyplot as plt
 def plot():
-  for i,vals in enumerate(res[:,1:].T):
-    plt.plot(res[:,0],vals,label=names[i])
+  for name in res.dtype.names[1:]:
+    plt.plot(res.t,res[name],label=name)
     
   plt.legend()
   plt.show()
   
 plot()
 
+myfmu.free()
 
