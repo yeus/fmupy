@@ -17,8 +17,7 @@
 
 
 import numpy as np
-import scipy as sp
-import fmusim
+import fmusim2
 from scipy import interpolate
 
 ##myfmu = fmu("./Modelica_Mechanics_MultiBody_Examples_Elementary_DoublePendulum.fmu")
@@ -29,24 +28,23 @@ from scipy import interpolate
 #myfmu = fmu("satcomponents_blocks_noise_sampled.fmu", logging = False)
 #myfmu = fmu("rosmo_ExternalLibraries.fmu", logging = True)
 #myfmu = fmusim.fmu("FMU/iboss_vti.fmu", logging = True)
-myfmu = fmusim.fmu("modelicatests_multidimensional_motor.fmu", logging = True)
-
-
+#with fmusim2.fmi("./FMU/efunc.fmu", loggingOn = True) as myfmu:
+myfmu = fmusim2.fmi("./FMU/efunc.fmu", loggingOn = True)
 ##myfmu.printvarprops()
 ##print(myfmu.getOutputNames())
 #names=list(myfmu.getOutputNames().values())
 #names=myfmu.getStateNames()
-names = myfmu.getVariables()
-print(names)
+#names = myfmu.getVariables()
+#print(names)
 #names=[#'iXp.comm_out.tmp','iXp.comm_out.mi_pos',"set_mi_pos.[1]"]
-names=['constantvoltage1.i']
+names=['x']
 
 def intpl1d(table):
     table = np.array(table)
     return interpolate.interp1d(table[:,0],table[:,1], kind = 0)#‘linear’, ‘nearest’, ‘zero’, ‘slinear’, ‘quadratic, ‘cubic’ where ‘slinear’, ‘quadratic’ and ‘cubic’ 
 
 #simulation with generic solvers
-t_end = 2000.0
+t_end = 10.0
 #ctrlmi = intpl1d([[0.0,0.0],[10.0,0.5],[20.0,0.1],[150.0,0.9],[1000000.0,1.0]])
 #infuncs = {'set_mi_pos.[1]':ctrlmi}
 #res = myfmu.simulate(dt=10.0, t_end=t_end, varnames = names, inputfs = infuncs)

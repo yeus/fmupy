@@ -87,6 +87,13 @@ class fmi(fmu2.FMUInterface):
 #                  names.append('')
 #      return names
 
+  def __enter__(self):
+    return self
+
+  def __exit__(self, exc_type, exc_value, traceback):
+    print("freefmu...")
+    fmu.free()    
+
   def getInputVariables(self):
     vars = [(name, var.type.start) for (name, var) in self.description.scalarVariables.items() if var.causality == 'input']
     return vars
@@ -204,9 +211,6 @@ class fmi(fmu2.FMUInterface):
               
       return names      
 
-  def getContinuousVariables(self):
-      return self.getVariables('continuous')
-
   def getOutputNames(self):
       ''' Returns a list of Strings: the names of all output variables in the model.
       '''
@@ -244,28 +248,6 @@ class fmi(fmu2.FMUInterface):
       return names'''
       print("FMU2.0 not working yet ...")
 
-  def getStates(self):
-      ''' Returns a vector with the values of the states.
-      '''
-      status, x = self.fmiGetContinuousStates()
-      
-      return x
-
-  def getVariables(self, variability = 'all', causality = 'all'):
-      ''' 
-	variability:  return variables with variability property
-	Returns:  
-	  a list of Strings: the namesof the variables with a certain property
-      '''
-
-      names = {}
-      for key,var in self.description.scalarVariables.items():
-          if variability == 'all' or var.variability==variability:
-            #print(key, var.valueReference, var.alias, var.variability, var.description, var.causality,var.directDependency,  var.type)
-            names[var.valueReference]=key
-              
-      return names
-
   def _setDefaultStartValues(self):
       ''' Reads given start values from FMI model description and sets variables accordingly
       '''
@@ -273,7 +255,6 @@ class fmi(fmu2.FMUInterface):
           if self.description.scalarVariables[index].type.start != None:
               print(index, self.description.scalarVariables[index].type.start)
               self.setValue(index, self.description.scalarVariables[index].type.start)
-
 
   def initialize(self, tStart, tStop, errorTolerance=1e-9):
       ''' Initializes the model at time = t with
@@ -350,10 +331,10 @@ class fmi(fmu2.FMUInterface):
     pass
 
   def simulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[], inputfs = {}):
-    if self._mode == 'me':
+    if self.activeFmiType == 'me':
       print("run me-simulation")
       return self.mesimulate(dt, t_start, t_end, varnames, inputfs =  inputfs)
-    elif self._mode == 'cs':
+    elif self.activeFmiType == 'cs':
       print("run co-simulation")
       return self.cosimulate(dt, t_start, t_end, varnames, inputfs = inputfs)
 
@@ -395,75 +376,53 @@ class fmi(fmu2.FMUInterface):
     return np.array(res)
 
   def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 1.0, varnames=[], inputfs = {}):
-    tc = t_start #current master time
+    status,nextTimeEvent = self.initialize(0.0,10.0)
     
-    self.fmiInitializeSlave(t_start, True, t_end)
+    if status > 1:
+        print("Model initialization failed. fmiStatus = " + str(status))
+    
+    self.setValue("x",3.1) ##setting input functions
+    
     res=[]
-    
-    while tc < t_end:
-      for name,func in inputfs.items():
-        self.setValue(name, func(tc))
-      
-      step=[[tc]+[self.getValue(varname) for varname in varnames]]
-      res+=step      
-      #from the documentation:
-      # fmiStatus fmiDoStep( fmiComponent c, fmiReal currentCommunicationPoint,fmiReal communicationStepSize, fmiBoolean newStep);
-      info = self.fmiDoStep(tc, dt, True) #"newstep = True" because master accepts last simulation step
-      if info != 0: 
-        print(info)
-        if info == 3:
-          print("Detected infinite loop in calculation")
-          break
-      tc+=dt
-
-    self.fmiTerminateSlave()
-    
-    return np.array(res)
-
-dt = 0.1
-t = 0.0
-t_end= 10.0
-
-fmu = fmi("./FMU/efunc.fmu",loggingOn = False)
-status,nextTimeEvent = fmu.initialize(0.0,10.0)
-
-if status > 1:
-    print("Model initialization failed. fmiStatus = " + str(status))
-
-fmu.setValue("x",3.1)
-
-inloop = True
-while inloop:
-  status = fmu.fmiDoStep(t, dt, fmiTrue) 
-  print(fmu.getValue(['x','der(x)']))
-  if t>3.0 and t<3.1: fmu.setValue("x",3.1)          
-  if status > 2:
-      print("error in doStep at time = {:.2e}".format(t))
-      # Raise exception to abort simulation...
-      finalize(None)
-      raise(SimulatorBase.Stopping)
-  elif status == 2:  # Discard
-      status, info = fmu.fmiGetBooleanStatus(3) # fmi2Terminated
-      if info == fmiTrue:
-          status, lastTime = fmu.fmiGetRealStatus(2)       # fmi2LastSuccessfulTime
-          t = lastTime
-          doLoop = False
-      else:
-          print("Not supported status in doStep at time = {:.2e}".format(t))
+    t = t_start #current master time
+    inloop = True
+    while inloop:
+      #TODO: enable input functions
+      #for name,func in inputfs.items():
+      #  self.setValue(name, func(tc))
+      status = self.fmiDoStep(t, dt, fmiTrue) 
+      #print(self.getValue(['x','der(x)']))
+      step=[[t]+[self.getValue(varname) for varname in varnames]]
+      res+=step    
+      if t>3.0 and t<3.1: self.setValue("x",3.1)          
+      if status > 2:
+          print("error in doStep at time = {:.2e}".format(t))
           # Raise exception to abort simulation...
-          finalize()
-          raise(SimulatorBase.Stopping)   
-  elif status < 2:
-      t += dt
-  if t > t_end: inloop = False
+          finalize(None)
+          raise(SimulatorBase.Stopping)
+      elif status == 2:  # Discard
+          status, info = self.fmiGetBooleanStatus(3) # fmi2Terminated
+          if info == fmiTrue:
+              status, lastTime = self.fmiGetRealStatus(2)       # fmi2LastSuccessfulTime
+              t = lastTime
+              inloop = False
+          else:
+              print("Not supported status in doStep at time = {:.2e}".format(t))
+              # Raise exception to abort simulation...
+              finalize()
+              raise(SimulatorBase.Stopping)   
+      elif status < 2:
+          t += dt
+      if t > t_end: inloop = False    
+        
+    return np.array(res)
+    
+#status, state = fmu.fmiGetFMUstate()
+#print("status: {}, state: {}".format(status, state))
 
-status, state = fmu.fmiGetFMUstate()
-print("status: {}, state: {}".format(status, state))
+#print("setting fmu state ...")
+#fmu.fmiSetFMUstate(state)
 
-print("setting fmu state ...")
-fmu.fmiSetFMUstate(state)
-
-print(fmu.getContinuousVariables())
 #print(fmu.getStates())
 
 #status, size = fmu.fmiSerializedFMUstateSize(state)
@@ -476,9 +435,6 @@ print(fmu.getContinuousVariables())
 
 #for i,j in fmu.getContinuousVariables().items():
 #    print(fmu.fmiGetReal(i))
-
-print("freefmu...")
-fmu.free()
 
 ##myfmu.printvarprops()
 ##print(myfmu.getOutputNames())
