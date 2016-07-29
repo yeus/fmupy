@@ -21,6 +21,7 @@ in a python class. Its the main class that shoudl be used by 3rd party applicati
 
 
 import numpy as np
+import ctypes
 import types
 import FMUInterface2 as fmu2
 from FMUInterface2 import fmiTrue, fmiFalse, fmiValueReference,fmiValueReferenceVector
@@ -96,6 +97,10 @@ class fmi(fmu2.FMUInterface):
 
   def getInputVariables(self):
     vars = [(name, var.type.start) for (name, var) in self.description.scalarVariables.items() if var.causality == 'input']
+    return vars
+
+  def getVariables(self):
+    vars = [(name, var.type.start) for (name, var) in self.description.scalarVariables.items()]
     return vars
 
   def getValue(self, name):
@@ -197,8 +202,8 @@ class fmi(fmu2.FMUInterface):
         elif self.description.scalarVariables[valueName].type.basicType == 'String':
             ScalarVariableValueVector = fmu2.createfmiStringVector(1)
             ScalarVariableValueVector[0] = unicode(valueValue)
-            self.fmiSetString(ScalarVariableReferenceVector, ScalarVariableValueVector)
-
+            self.fmiSetString(ScalarVariableReferenceVector, valueValue)
+            #self.fmiSetString(ScalarVariableReferenceVector, ctypes.c_char_p(valueValue))
 
   def printvarprops(self):
       ''' Returns a list of Strings: the names of all output variables in the model.
@@ -378,10 +383,12 @@ class fmi(fmu2.FMUInterface):
   def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 1.0, varnames=[], inputfs = {}):
     status,nextTimeEvent = self.initialize(0.0,t_end)
     
+    assert not isinstance(varnames, basestring)
+    
     if status > 1:
         print("Model initialization failed. fmiStatus = " + str(status))
     
-    self.setValue("x",3.1) ##setting input functions
+    #self.setValue("x",3.1) ##setting input functions
     
     
     dtype = [("t","float")]+[(name,"float") for name in varnames]
@@ -396,7 +403,7 @@ class fmi(fmu2.FMUInterface):
       #print(self.getValue(['x','der(x)']))
       step=tuple([t]+[self.getValue(varname) for varname in varnames])
       res.append(step)    
-      if t>3.0 and t<3.1: self.setValue("x",3.1)          
+      #if t>3.0 and t<3.1: self.setValue("x",3.1)          
       if status > 2:
           print("error in doStep at time = {:.2e}".format(t))
           # Raise exception to abort simulation...
