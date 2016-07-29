@@ -90,8 +90,10 @@ def createfmiBooleanVector(n):
 
 
 def createfmiStringVector(n):
-    return (fmiString * n)()
-
+    return (fmiString * n)()  #TODO:  some kind of bug is here
+    #return (numpy.ndarray(n, "u"))
+    #return ctypes.create_string_buffer(init_or_size[, size])
+    #return (numpy.ndarray(n,)
 
 def createfmiReferenceVector(n):
     return (numpy.ndarray(n, numpy.uint32))
@@ -502,9 +504,11 @@ class FMUInterface(object):
         return self._fmiSetBoolean(self._fmiComponent, valueReference.ctypes.data_as(fmiValueReferenceVector), len(valueReference), value.ctypes.data_as(fmiBooleanVector))
 
     def fmiSetString(self, valueReference, value):
-        if len(valueReference) != len(value):
-            raise IndexError('length of valueReference not corresponding to length of value')
-        return self._fmiSetString(self._fmiComponent, valueReference.ctypes.data_as(fmiValueReferenceVector), len(valueReference), value.ctypes.data_as(fmiStringVector))
+        #TODO:  implement correct check
+        #if len(valueReference) != len(value):
+        #    raise IndexError('length of valueReference not corresponding to length of value')
+        #return self._fmiSetString(self._fmiComponent, valueReference.ctypes.data_as(fmiValueReferenceVector), len(valueReference), value.ctypes.data_as(fmiStringVector))
+        return self._fmiSetString(self._fmiComponent, valueReference.ctypes.data_as(fmiValueReferenceVector), len(valueReference), ctypes.c_char_p(value))
 
     def fmiGetFMUstate(self):              
         FMUstate = ctypes.c_void_p()        
@@ -644,7 +648,7 @@ if __name__ == '__main__':
     fmu.fmiEnterInitializationMode()
     fmu.fmiExitInitializationMode()   
     status, state = fmu.fmiGetFMUstate()
-    print status, state
+    print(status, state)
     
     fmu.fmiSetFMUstate(state)
     
@@ -653,7 +657,7 @@ if __name__ == '__main__':
     status, vec = fmu.fmiSerializeFMUstate(state, size)
     
     status, state = fmu.fmiFreeFMUstate(state)
-    print status, state  
+    print(status, state)
     
     
     fmu.free()
