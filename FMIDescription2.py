@@ -252,7 +252,7 @@ class FMIDescription:
         try:
             _document = etree.parse(xmlFile)
         except BaseException as e:
-            print 'Error when parsing FMU\'s xml-file. Error: ', e
+            print('Error when parsing FMU\'s xml-file. Error: ', e)
             raise FMUError.FMUError('Error when parsing FMU\'s xml-file.\n' + str(e) + '\n')
         _docroot = _document.getroot()
         if _docroot.tag != 'fmiModelDescription':
@@ -476,40 +476,40 @@ if __name__ == '__main__':
     ''' Read FMI description file (directly from zip-file)'''    
     fmi = FMIDescription(open('d:/modelDescription_Rectifier.xml'))
 
-    print "Attributes"
-    print "*************"
-    print fmi.fmiVersion
-    print fmi.guid
-    print fmi.generationTool
+    print("Attributes")
+    print( "*************")
+    print( fmi.fmiVersion)
+    print( fmi.guid)
+    print( fmi.generationTool)
 
-    print "Units"
-    print "*************"
-    print fmi.units.keys()
-    print fmi.units['K'].K, fmi.units['K'].A
-    print fmi.units['K'].displayUnit['degC'].factor, fmi.units['K'].displayUnit['degC'].offset
+    print( "Units")
+    print( "*************")
+    print( fmi.units.keys())
+    print( fmi.units['K'].K, fmi.units['K'].A)
+    print( fmi.units['K'].displayUnit['degC'].factor, fmi.units['K'].displayUnit['degC'].offset)
   
 
-    print "Types"
-    print "*************"
-    print fmi.types.keys()
-    print fmi.types['Modelica.SIunits.Voltage'].basicType
-    print fmi.types['Modelica.SIunits.Voltage'].description
+    print( "Types")
+    print( "*************")
+    print( fmi.types.keys())
+    print( fmi.types['Modelica.SIunits.Voltage'].basicType)
+    print( fmi.types['Modelica.SIunits.Voltage'].description)
 
-    print "Vendor Annotations"
-    print "*************"
-    print fmi.vendorAnnotations
+    print( "Vendor Annotations")
+    print( "*************")
+    print( fmi.vendorAnnotations)
 
-    print "ScalarVariables"
-    print "***************"
-    print fmi.scalarVariables.keys()
-    print fmi.scalarVariables['Capacitor1.p.v'].type
-    print fmi.scalarVariables['Capacitor1.p.v'].type.unit
-    print fmi.scalarVariables['Capacitor1.p.v'].valueReference
-    print fmi.scalarVariables['Capacitor1.p.v'].variability
+    print( "ScalarVariables")
+    print( "***************")
+    print( fmi.scalarVariables.keys())
+    print( fmi.scalarVariables['Capacitor1.p.v'].type)
+    print( fmi.scalarVariables['Capacitor1.p.v'].type.unit)
+    print( fmi.scalarVariables['Capacitor1.p.v'].valueReference)
+    print( fmi.scalarVariables['Capacitor1.p.v'].variability)
     
     
-    print "ModelStructure"
-    print "***************"
-    print fmi.modelStructure.outputs[0].index
-    print fmi.modelStructure.outputs[0].dependencies 
-    print fmi.modelStructure.outputs[0].dependenciesKind
+    print( "ModelStructure")
+    print( "***************")
+    print( fmi.modelStructure.outputs[0].index)
+    print( fmi.modelStructure.outputs[0].dependencies )
+    print( fmi.modelStructure.outputs[0].dependenciesKind)
