@@ -235,7 +235,8 @@ class FMUInterface(object):
         Instantiate = getattr(self._library, 'fmi2Instantiate')
         Instantiate.argtypes = [fmiString, fmiType, fmiString, fmiString, ctypes.POINTER(_fmiCallbackFunctions), fmiBoolean, fmiBoolean]
         Instantiate.restype = fmiComponent
-        self._fmiComponent = Instantiate(self.instanceID, 0 if self.activeFmiType=='me' else 1, self.description.guid, 'file:/' + self._tempDir, self._fmiCallbackFunctions, self.visible, fmiTrue if self._loggingOn else fmiFalse)
+        fmuResourcelocation = 'file://' + self._tempDir
+        self._fmiComponent = Instantiate(self.instanceID, 0 if self.activeFmiType=='me' else 1, self.description.guid, fmuResourcelocation, self._fmiCallbackFunctions, self.visible, fmiTrue if self._loggingOn else fmiFalse)
         if self._fmiComponent == None:
             raise FMUError.FMUError('Instantiation of FMU failed.\n')
 

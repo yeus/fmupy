@@ -48,6 +48,24 @@ fmiByte = ctypes.c_char
 fmiByteVector = ctypes.POINTER(fmiByte)
 fmiStatusKind = ctypes.c_uint"""
 
+#/** FMI 1.0 status codes */
+fmiStatus=dict(fmiOK = 0,
+    fmiWarning = 1,
+    fmiDiscard = 2,
+    fmiError = 3,
+    fmiFatal = 4,
+    fmiPending = 5)
+
+class Struct:
+    def __init__(self, **entries): 
+        self.__dict__.update(entries)
+        self.__revdict__= {v: k for k, v in self.__dict__.items()}
+    
+    def rev(self,arg):
+        return self.__revdict__[arg]
+
+fmiStatus = Struct(**fmiStatus)
+
 class fmi(fmu2.FMUInterface):
   def __init__(self, file, loggingOn = True):
     super(fmi, self).__init__(file, loggingOn = loggingOn, preferredFmiType="cs") #init fmu interface
@@ -258,7 +276,7 @@ class fmi(fmu2.FMUInterface):
       '''
       for index in self.description.scalarVariables:
           if self.description.scalarVariables[index].type.start != None:
-              print(index, self.description.scalarVariables[index].type.start)
+              #print(index, self.description.scalarVariables[index].type.start)
               self.setValue(index, self.description.scalarVariables[index].type.start)
 
   def initialize(self, tStart, tStop, errorTolerance=1e-9):
@@ -405,10 +423,10 @@ class fmi(fmu2.FMUInterface):
       res.append(step)    
       #if t>3.0 and t<3.1: self.setValue("x",3.1)          
       if status > 2:
-          print("error in doStep at time = {:.2e}".format(t))
+          print("error <{}> in doStep at time = {:.2e}".format(fmiStatus.rev(status),t))
           # Raise exception to abort simulation...
-          finalize(None)
-          raise(SimulatorBase.Stopping)
+          self.finalize()
+          inloop = False
       elif status == 2:  # Discard
           status, info = self.fmiGetBooleanStatus(3) # fmi2Terminated
           if info == fmiTrue:
@@ -418,13 +436,17 @@ class fmi(fmu2.FMUInterface):
           else:
               print("Not supported status in doStep at time = {:.2e}".format(t))
               # Raise exception to abort simulation...
-              finalize()
-              raise(SimulatorBase.Stopping)   
+              self.finalize()
       elif status < 2:
           t += dt
       if t > t_end: inloop = False    
  
     return np.array(res, dtype = dtype).view(np.recarray)
+
+  def finalize(self):
+    # Terminate simulation in model
+    self.fmiTerminate()
+    self.freeModelInstance()
     
 #status, state = fmu.fmiGetFMUstate()
 #print("status: {}, state: {}".format(status, state))
