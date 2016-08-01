@@ -39,14 +39,17 @@ from pymodelica import compile_fmu
 #model_name = 'ibossmo.buildingblocks.verosim_basic'
 #model_name = 'ibossmo.buildingblocks.examples.verosim_block'
 #model_name = 'ibossmo.components.Examples.interfacecomplete_with_dcdc'
-mo_file = '../model/satcomponents/modelicatests.mo'
-model_name = 'modelicatests.multidimensional_motor'
+mo_file = '/home/tom/iboss_sim/model/satcomponents/satcomponents.mo'
+model_name = 'satcomponents.AOCS.examples.mission_simulation_ideal'
+#mo_file = "efunc.mo"
+#model_name = 'efunc'
 
 
 
 # Compile the model and save the return argument, which is the file name of the FMU
 #my_fmu = compile_fmu(model_name,mo_file, target='me',compiler_options = {'extra_lib_dirs':'../../../model/satcomponents'}, version = '1.0')
-my_fmu = compile_fmu(model_name, mo_file, target='cs',compiler_options = {'extra_lib_dirs':'../model/satcomponents'}, version = '1.0')  #target='cs'  for cosimulation, otherwise, just for model exchange
+my_fmu = compile_fmu(model_name, mo_file, target='cs',compiler_options = {'extra_lib_dirs':'../model/satcomponents'}, version = '2.0')  #target='cs'  for cosimulation, otherwise, just for model exchange
+#my_fmu = compile_fmu(model_name, mo_file, target='cs', version = '2.0')  #target='cs'  for cosimulation, otherwise, just for model exchange
 
 # Compile an example model from the MSL
 #fmu1 = compile_fmu('Modelica.Mechanics.Rotational.Examples.First')
