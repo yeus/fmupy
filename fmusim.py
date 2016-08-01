@@ -28,7 +28,7 @@ from FMUInterface import fmiTrue, fmiFalse
 from operator import itemgetter
 
 import time
-
+import re
 import types
 
 
@@ -234,6 +234,17 @@ class fmu(FMUInterface.FMUInterface):
             names[var.valueReference]=key
               
       return names
+
+  def searchvars(self,string):
+    r = re.compile(string)  #search for variables to plot
+    vmatch = np.vectorize(lambda x:bool(r.match(x)))
+
+    #A = np.array(list('abc abc abc'))
+    #sel = vmatch(A)
+
+    vrs = np.array(self.getVariables())[:,0]
+    #myfmu.getVariables()
+    return vrs[vmatch(vrs)]
 
   def initialize(self, t, errorTolerance=1e-9):
       ''' Initializes the model at time = t with
