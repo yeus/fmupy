@@ -25,6 +25,8 @@ import ctypes
 import types
 import FMUInterface2 as fmu2
 from FMUInterface2 import fmiTrue, fmiFalse, fmiValueReference,fmiValueReferenceVector
+import re
+
 """fmiFalse = 0
 fmiTrue = 1
 fmiReal = ctypes.c_double
@@ -117,8 +119,24 @@ class fmi(fmu2.FMUInterface):
     vars = [(name, var.type.start) for (name, var) in self.description.scalarVariables.items() if var.causality == 'input']
     return vars
 
+  def searchvars(self,string):
+    r = re.compile(string)  #search for variables to plot
+    vmatch = np.vectorize(lambda x:bool(r.match(x)))
+
+    #A = np.array(list('abc abc abc'))
+    #sel = vmatch(A)
+
+    vrs = np.array(self.getVariables())[:,0]
+    #myfmu.getVariables()
+    return vrs[vmatch(vrs)]
+
   def getVariables(self):
     vars = [(name, var.type.start) for (name, var) in self.description.scalarVariables.items()]
+    return vars
+
+  def getStartValues(self,varlist):
+    allvars = self.description.scalarVariables
+    vars = [(name,allvars[name].type.start) for name in varlist]
     return vars
 
   def getValue(self, name):
@@ -195,6 +213,10 @@ class fmi(fmu2.FMUInterface):
           return retValue
       else:
           return retValue[0]
+    
+  def setValues(self, valuelist):
+      for name, val in valuelist:
+          self.setValue(name,val)
     
   def setValue(self, valueName, valueValue):
         ''' set the variable valueName to valueValue
@@ -398,16 +420,19 @@ class fmi(fmu2.FMUInterface):
     
     return np.array(res)
 
-  def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 1.0, varnames=[], inputfs = {}):
-    status,nextTimeEvent = self.initialize(0.0,t_end)
+  def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 1.0, varnames=[], inputfs = {}, startvalues = [], initialize = False):
+    if initialize:
+        status,nextTimeEvent = self.initialize(0.0,t_end)
+        
+        assert not isinstance(varnames, basestring)
+        
+        if status > 1:
+            print("Model initialization failed. fmiStatus = " + str(status))
+        
+        #self.setValue("x",3.1) ##setting input functions
     
-    assert not isinstance(varnames, basestring)
-    
-    if status > 1:
-        print("Model initialization failed. fmiStatus = " + str(status))
-    
-    #self.setValue("x",3.1) ##setting input functions
-    
+    for name,val in startvalues:
+        self.setValue(name,val)
     
     dtype = [("t","float")]+[(name,"float") for name in varnames]
     res=[]
