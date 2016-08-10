@@ -73,7 +73,7 @@ class fmi(fmu2.FMUInterface):
     super(fmi, self).__init__(file, loggingOn = loggingOn, preferredFmiType="cs") #init fmu interface
     
     self.changedStartValue={}
-    
+    self.loggingOn=loggingOn
     print("FMI Version: {}".format(self._fmiGetVersion()))
     print("typesplatform: {}".format(self._fmiGetTypesPlatform()))
 
@@ -375,13 +375,13 @@ class fmi(fmu2.FMUInterface):
   def single_timestep(self, dt = 0.01):
     pass
 
-  def simulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[], inputfs = {}):
+  def simulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[], inputfs = {}, initialize=False):
     if self.activeFmiType == 'me':
-      print("run me-simulation")
+      if self.loggingOn: print("run me-simulation")
       return self.mesimulate(dt, t_start, t_end, varnames, inputfs =  inputfs)
     elif self.activeFmiType == 'cs':
-      print("run co-simulation")
-      return self.cosimulate(dt, t_start, t_end, varnames, inputfs = inputfs)
+      if self.loggingOn: print("run co-simulation")
+      return self.cosimulate(dt, t_start, t_end, varnames, inputfs = inputfs, initialize = initialize)
 
   def mesimulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[], inputfs = []):
     def RK4(y,t,h,f):
@@ -466,7 +466,7 @@ class fmi(fmu2.FMUInterface):
           t += dt
       if t > t_end: inloop = False    
  
-    return np.array(res, dtype = dtype).view(np.recarray)
+    return np.array(res, dtype = dtype).view(np.recarray), t
 
   def finalize(self):
     # Terminate simulation in model
