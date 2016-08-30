@@ -44,11 +44,20 @@ model_name = 'satcomponents.AOCS.examples.mission_simulation_ideal'
 #mo_file = "efunc.mo"
 #model_name = 'efunc'
 
-
+#help:
+#http://www.jmodelica.org/page/27667
+#and a list with the available options: http://www.jmodelica.org/api-docs/usersguide/1.17.0/apas01.html
+compiler_options = {'extra_lib_dirs':'../model/satcomponents', #can also be used with multiple direcctories: {'extra_lib_dirs':['c:\MyLibs1','c:\MyLibs2']}
+                    'runtime_log_to_file':True,
+                    #'cs_experimental_mode': 1,#	integer / 0	Activates experimental features of CS ode solvers
+                    'log_level':6, # Log level for the runtime: 0 - none, 1 - fatal error, 2 - error, 3 - warning, 4 - info, 5 - verbose, 6 - debug.
+                    'cs_step_size': 0.001,
+                    'cs_rel_tol':1e-8,
+                    'cs_solver': 0} #	integer / 0	Specifies the internal solver used in Co-Simulation. 0 - CVode, 1 - Euler.
 
 # Compile the model and save the return argument, which is the file name of the FMU
 #my_fmu = compile_fmu(model_name,mo_file, target='me',compiler_options = {'extra_lib_dirs':'../../../model/satcomponents'}, version = '1.0')
-my_fmu = compile_fmu(model_name, mo_file, target='cs',compiler_options = {'extra_lib_dirs':'../model/satcomponents'}, version = '2.0')  #target='cs'  for cosimulation, otherwise, just for model exchange
+my_fmu = compile_fmu(model_name, mo_file, target='cs',compiler_options = compiler_options , version = '2.0')  #target='cs'  for cosimulation, otherwise, just for model exchange
 #my_fmu = compile_fmu(model_name, mo_file, target='cs', version = '2.0')  #target='cs'  for cosimulation, otherwise, just for model exchange
 
 # Compile an example model from the MSL
