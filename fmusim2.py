@@ -19,6 +19,8 @@ in a python class. Its the main class that shoudl be used by 3rd party applicati
 # modified:
 #       - 2012 11 22 - Thomas Meschede
 
+#python2 tweaks:
+from __future__ import print_function
 
 import numpy as np
 import ctypes
@@ -375,13 +377,13 @@ class fmi(fmu2.FMUInterface):
   def single_timestep(self, dt = 0.01):
     pass
 
-  def simulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[], inputfs = {}, initialize=False):
+  def simulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[], inputfs = [], initialize=False, datares = 100):
     if self.activeFmiType == 'me':
       if self.loggingOn: print("run me-simulation")
       return self.mesimulate(dt, t_start, t_end, varnames, inputfs =  inputfs)
     elif self.activeFmiType == 'cs':
       if self.loggingOn: print("run co-simulation")
-      return self.cosimulate(dt, t_start, t_end, varnames, inputfs = inputfs, initialize = initialize)
+      return self.cosimulate(dt, t_start, t_end, varnames, inputfs = inputfs, initialize = initialize, datares = datares)
 
   def mesimulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[], inputfs = []):
     def RK4(y,t,h,f):
@@ -420,7 +422,8 @@ class fmi(fmu2.FMUInterface):
     
     return np.array(res)
 
-  def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 1.0, varnames=[], inputfs = {}, startvalues = [], initialize = False):
+  def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 1.0, varnames=[], inputfs = [],
+                 startvalues = [], initialize = False, datares = 100, dt_min = 1e-10):#TODO: datares integrieren
     if initialize:
         status,nextTimeEvent = self.initialize(0.0,t_end)
         
@@ -438,20 +441,31 @@ class fmi(fmu2.FMUInterface):
     res=[]
     t = t_start #current master time
     inloop = True
+    lastperc = 0
+    dt_tmp = dt
+    print("running:")
     while inloop:
       #TODO: enable input functions
-      #for name,func in inputfs.items():
-      #  self.setValue(name, func(tc))
-      status = self.fmiDoStep(t, dt, fmiTrue) 
+      for names,func in inputfs:
+        for name,val in zip(names,func(t)):
+            #print(t,name,val)
+            self.setValue(name, val)
+        #inloop = False
+      status = self.fmiDoStep(t, dt_tmp, fmiTrue) 
       #print(self.getValue(['x','der(x)']))
       step=tuple([t]+[self.getValue(varname) for varname in varnames])
-      res.append(step)    
       #if t>3.0 and t<3.1: self.setValue("x",3.1)          
       if status > 2:
-          print("error <{}> in doStep at time = {:.2e}".format(fmiStatus.rev(status),t))
+          if t >= t_end: print("simulation finished succesful")
+          elif dt_tmp>dt_min:
+              dt_tmp = dt_tmp/2.0
+              print("smaller stepsize: {}".format(dt_tmp))
+              continue
+          else: 
+              print("an error: <{}> in doStep at time = {:.2e}".format(fmiStatus.rev(status),t))
           # Raise exception to abort simulation...
           self.finalize()
-          inloop = False
+          break
       elif status == 2:  # Discard
           status, info = self.fmiGetBooleanStatus(3) # fmi2Terminated
           if info == fmiTrue:
@@ -461,12 +475,20 @@ class fmi(fmu2.FMUInterface):
           else:
               print("Not supported status in doStep at time = {:.2e}".format(t))
               # Raise exception to abort simulation...
-              self.finalize()
+              break
       elif status < 2:
           t += dt
-      if t > t_end: inloop = False    
+          dt_tmp = dt
+          res.append(step)   
+          perc = round(t/t_end*100.0)
+          if(perc-lastperc >= 5): 
+              print("{}% ".format(perc), end="")
+              lastperc = perc
+      if t > t_end: 
+          print("simulation finished succesful")
+          inloop = False    
  
-    return np.array(res, dtype = dtype).view(np.recarray), t
+    return np.array(res, dtype = dtype).view(np.recarray), t, status
 
   def finalize(self):
     # Terminate simulation in model
