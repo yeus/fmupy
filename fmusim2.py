@@ -423,7 +423,7 @@ class fmi(fmu2.FMUInterface):
     return np.array(res)
 
   def cosimulate(self, dt=0.01, t_start = 0.0, t_end = 1.0, varnames=[], inputfs = [],
-                 startvalues = [], initialize = False, datares = 100, dt_min = 1e-10):#TODO: datares integrieren
+                 startvalues = [], initialize = False, datares = 100, dt_min = 1e-40):#TODO: datares integrieren
     if initialize:
         status,nextTimeEvent = self.initialize(0.0,t_end)
         
@@ -459,9 +459,10 @@ class fmi(fmu2.FMUInterface):
           if t >= t_end: print("simulation finished succesful")
           elif dt_tmp>dt_min:
               dt_tmp = dt_tmp/2.0
-              print("smaller stepsize: {}".format(dt_tmp))
+              if self.loggingOn: print("smaller stepsize: {}".format(dt_tmp))
               continue
-          else: 
+          else:
+              if dt_tmp < dt_min: print("smalles step size reached ({})!".format(dt_tmp))
               print("an error: <{}> in doStep at time = {:.2e}".format(fmiStatus.rev(status),t))
           # Raise exception to abort simulation...
           self.finalize()
