@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 
@@ -9,4 +8,4 @@
 # modified:
 #	- 2012 10 25 - Thomas Meschede
 
-__all__ = ["fmupy"] 
+__all__ = ["fmupy", "FMUSimulator2"] 

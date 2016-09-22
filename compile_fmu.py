@@ -51,7 +51,7 @@ compiler_options = {'extra_lib_dirs':'../model/satcomponents', #can also be used
                     'runtime_log_to_file':True,
                     #'cs_experimental_mode': 1,#	integer / 0	Activates experimental features of CS ode solvers
                     'log_level':6, # Log level for the runtime: 0 - none, 1 - fatal error, 2 - error, 3 - warning, 4 - info, 5 - verbose, 6 - debug.
-                    'cs_step_size': 0.001,
+                    'cs_step_size': 0.00001,
                     'cs_rel_tol':1e-8,
                     'cs_solver': 0} #	integer / 0	Specifies the internal solver used in Co-Simulation. 0 - CVode, 1 - Euler.
 

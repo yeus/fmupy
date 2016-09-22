@@ -36,7 +36,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import collections
 
-import FMUError
+from . import FMUError
 import xml.etree.ElementTree as etree
 
 
@@ -297,7 +297,7 @@ class FMIDescription:
                 print('Unknown tag in FMI Model: %s\n' % child.tag)
         
         ''' Update type values in scalar variables - use defaults from simple type definitions '''
-        for var in self.scalarVariables.itervalues():
+        for var in self.scalarVariables.values():
             if var.type.declaredType is not None:
                 var.type.updateDefaults(self.types[var.type.declaredType])
                 
@@ -313,8 +313,8 @@ class FMIDescription:
         output.providesDirectionalDerivative = defaultNone(getAttribute(root,'providesDirectionalDerivative'), 'false')
         
         output.sourceFile = []
-        children = root._children
-        for child in children:
+        #children = root._children  old_depreciated python2
+        for child in root:
             if child.tag == 'SourceFiles':
                 allFiles = child._children
                 for x in allFiles:                    
@@ -345,8 +345,8 @@ class FMIDescription:
             else:
                 unitName = unit.get('name')
                 self.units[unitName] = Unit()                
-                children = unit._children
-                for child in children:
+                #children = unit._children  #deprecated python2
+                for child in unit:
                     if child.tag == 'BaseUnit':
                         self.units[unitName].update('kg', child.get('kg'))
                         self.units[unitName].update('m', child.get('m'))

@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 '''
 This Code organizes the FMU Interfaces  "FMUInterface.py" and "FMIDescription.py" 
@@ -25,8 +24,10 @@ from __future__ import print_function
 import numpy as np
 import ctypes
 import types
-import FMUInterface2 as fmu2
-from FMUInterface2 import fmiTrue, fmiFalse, fmiValueReference,fmiValueReferenceVector
+import sys
+#print(sys.path)
+from . import FMUInterface2 as fmu2
+from .FMUInterface2 import fmiTrue, fmiFalse, fmiValueReference,fmiValueReferenceVector
 import re
 
 """fmiFalse = 0
@@ -145,7 +146,7 @@ class fmi(fmu2.FMUInterface):
       ''' Returns the values of the variables given in name;
           name is either a String or a list of Strings.
       '''
-      if types.TypeType(name) == types.ListType:
+      if type(name) == list:
           n = len(name)
           nameList = True
           names = name
@@ -177,38 +178,38 @@ class fmi(fmu2.FMUInterface):
               refString.append(self.description.scalarVariables[x].valueReference)
               iString.append(i)
 
-      retValue = range(n)
+      retValue = list(range(n))
       k = len(refReal)
       if k > 0:
           ref = fmu2.createfmiReferenceVector(k)
-          for i in xrange(k):
+          for i in range(k):
               ref[i] = refReal[i]
           status, values = self.fmiGetReal(ref)
-          for i in xrange(k):
+          for i in range(k):
               retValue[iReal[i]] = values[i]
       k = len(refInteger)
       if k > 0:
           ref = fmu2.createfmiReferenceVector(k)
-          for i in xrange(k):
+          for i in range(k):
               ref[i] = refInteger[i]
           status, values = self.fmiGetInteger(ref)
-          for i in xrange(k):
+          for i in range(k):
               retValue[iInteger[i]] = values[i]
       k = len(refBoolean)
       if k > 0:
           ref = fmu2.createfmiReferenceVector(k)
-          for i in xrange(k):
+          for i in range(k):
               ref[i] = refBoolean[i]
           status, values = self.fmiGetBoolean(ref)
-          for i in xrange(k):
+          for i in range(k):
               retValue[iBoolean[i]] = values[i]
       k = len(refString)
       if k > 0:
           ref = fmu2.createfmiReferenceVector(k)
-          for i in xrange(k):
+          for i in range(k):
               ref[i] = refString[i]
           status, values = self.fmiGetString(ref)
-          for i in xrange(k):
+          for i in range(k):
               retValue[iString[i]] = values[i]
 
       if nameList:
@@ -243,7 +244,7 @@ class fmi(fmu2.FMUInterface):
             self.fmiSetBoolean(ScalarVariableReferenceVector, ScalarVariableValueVector)
         elif self.description.scalarVariables[valueName].type.basicType == 'String':
             ScalarVariableValueVector = fmu2.createfmiStringVector(1)
-            ScalarVariableValueVector[0] = unicode(valueValue)
+            ScalarVariableValueVector[0] = valueValue.encode()
             self.fmiSetString(ScalarVariableReferenceVector, valueValue)
             #self.fmiSetString(ScalarVariableReferenceVector, ctypes.c_char_p(valueValue))
 
@@ -427,7 +428,7 @@ class fmi(fmu2.FMUInterface):
     if initialize:
         status,nextTimeEvent = self.initialize(0.0,t_end)
         
-        assert not isinstance(varnames, basestring)
+        assert not isinstance(varnames, str)
         
         if status > 1:
             print("Model initialization failed. fmiStatus = " + str(status))
@@ -440,6 +441,7 @@ class fmi(fmu2.FMUInterface):
     dtype = [("t","float")]+[(name,"float") for name in varnames]
     res=[]
     t = t_start #current master time
+    t_succ = t
     inloop = True
     lastperc = 0
     dt_tmp = dt
@@ -461,8 +463,11 @@ class fmi(fmu2.FMUInterface):
               dt_tmp = dt_tmp/2.0
               if self.loggingOn: print("smaller stepsize: {}".format(dt_tmp))
               continue
+          #elif t > t_succ:
+          #    t = t_succ
+          #    dt_tmp = 
           else:
-              if dt_tmp < dt_min: print("smalles step size reached ({})!".format(dt_tmp))
+              if dt_tmp < dt_min: print("smallest step size reached ({})!".format(dt_tmp))
               print("an error: <{}> in doStep at time = {:.2e}".format(fmiStatus.rev(status),t))
           # Raise exception to abort simulation...
           self.finalize()
@@ -478,6 +483,7 @@ class fmi(fmu2.FMUInterface):
               # Raise exception to abort simulation...
               break
       elif status < 2:
+          t_succ = t
           t += dt
           dt_tmp = dt
           res.append(step)   

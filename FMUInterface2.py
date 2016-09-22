@@ -45,8 +45,9 @@ import os
 
 import numpy
 
-from FMIDescription2 import FMIDescription
-import FMUError
+from . import FMIDescription2
+from .FMIDescription2 import FMIDescription
+from . import FMUError
 
 
 ''' Declaration of file-type correspondents between Modelica/C and Python
@@ -132,7 +133,7 @@ class FMUInterface(object):
         self.visible = fmiFalse
         
         self._loggingOn = loggingOn
-        self._tempDir = tempfile.mkdtemp()     
+        self._tempDir = tempfile.mkdtemp()
 
         ''' Open the given fmu-file (read only)'''
         try:
@@ -147,7 +148,7 @@ class FMUInterface(object):
             Still the C functions require an ID. Python associates an ID with every instance of an object.
             We just use this ID for communication with the C-Functions.
         '''
-        self.instanceID = str(id(self))
+        self.instanceID = fmiString(id(self))
         self.log = []
 
         ''' Read FMI description file (directly from zip-file)'''
@@ -235,8 +236,10 @@ class FMUInterface(object):
         Instantiate = getattr(self._library, 'fmi2Instantiate')
         Instantiate.argtypes = [fmiString, fmiType, fmiString, fmiString, ctypes.POINTER(_fmiCallbackFunctions), fmiBoolean, fmiBoolean]
         Instantiate.restype = fmiComponent
-        fmuResourcelocation = 'file://' + self._tempDir
-        self._fmiComponent = Instantiate(self.instanceID, 0 if self.activeFmiType=='me' else 1, self.description.guid, fmuResourcelocation, self._fmiCallbackFunctions, self.visible, fmiTrue if self._loggingOn else fmiFalse)
+        bypath = "file://" + self._tempDir
+        print(self._tempDir, bypath, bypath.encode())
+        fmuResourcelocation = fmiString(bypath.encode())
+        self._fmiComponent = Instantiate(self.instanceID, 0 if self.activeFmiType=='me' else 1, self.description.guid.encode(), fmuResourcelocation, self._fmiCallbackFunctions, self.visible, fmiTrue if self._loggingOn else fmiFalse)
         if self._fmiComponent == None:
             raise FMUError.FMUError('Instantiation of FMU failed.\n')
 
@@ -509,7 +512,7 @@ class FMUInterface(object):
         #if len(valueReference) != len(value):
         #    raise IndexError('length of valueReference not corresponding to length of value')
         #return self._fmiSetString(self._fmiComponent, valueReference.ctypes.data_as(fmiValueReferenceVector), len(valueReference), value.ctypes.data_as(fmiStringVector))
-        return self._fmiSetString(self._fmiComponent, valueReference.ctypes.data_as(fmiValueReferenceVector), len(valueReference), ctypes.c_char_p(value))
+        return self._fmiSetString(self._fmiComponent, valueReference.ctypes.data_as(fmiValueReferenceVector), len(valueReference), ctypes.c_char_p(value.encode()))
 
     def fmiGetFMUstate(self):              
         FMUstate = ctypes.c_void_p()        
