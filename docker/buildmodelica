@@ -1,0 +1,18 @@
+#/bin/bash 
+
+#systemctl restart docker  #in case docker has no internet
+#if no internet connection:   systemctl restart docker
+
+#clean all containers:
+#docker stop $(docker ps -a -q)
+#docker rm $(docker ps -a -q)
+
+#in der TUB:
+#
+#systemctl stop docker
+#sudo dockerd --dns 192.168.0.1 &
+
+#docker build -f Dockerfile.ubuntu -t yeus/ubuntu .
+#docker build -f Dockerfile.conda -t yeus/anaconda3 .
+docker build -f Dockerfile.jmodelica -t yeus/jm .   #  with tag   yeus/thesis:final
+#docker build -f Dockerfile.ros -t yeus/thesis:final

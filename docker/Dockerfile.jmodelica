@@ -1,0 +1,41 @@
+FROM ubuntu:16.04
+
+RUN apt-get -y update
+
+RUN apt-get -y install g++ subversion gfortran ipython cmake swig ant openjdk-8-jdk
+RUN apt-get -y install python-dev python-numpy python-scipy python-matplotlib cython
+RUN apt-get -y install python-lxml python-nose python-jpype libblas-dev fort77
+RUN apt-get -y install zlib1g-dev libboost-dev automake autoconf unzip wget
+
+# RUN svn co https://svn.jmodelica.org/trunk JModelica.org
+
+
+
+RUN mkdir /opt/ipopt
+RUN cd /opt/ipopt && pwd
+RUN pwd
+RUN wget https://www.coin-or.org/download/source/Ipopt/Ipopt-3.12.6.zip
+RUN unzip Ipopt-3.12.6.zip -d .
+#RUN chown root:users ipopt
+RUN ls -a
+RUN pwd
+
+#RUN cd Ipopt-3.10.0-MUMPS-install/ThirdParty/Blas
+RUN Ipopt-3.12.6/ThirdParty/Blas/get.Blas
+#RUN cd ../Lapack
+RUN Ipopt-3.12.6/ThirdParty/Lapack/get.Lapack
+#RUN cd ../Mumps
+#RUN cd Ipopt-3.12.6/ThirdParty/Mumps && ./get.Mumps
+#RUN cd ../Metis
+RUN cd Ipopt-3.12.6/ThirdParty/Metis && ./get.Metis
+#RUN cd ../../
+RUN mkdir Ipopt-3.12.6/build
+RUN cd Ipopt-3.12.6/build && ../configure --prefix=/opt/ipopt && make install
+
+RUN mkdir /opt/jmodelica
+#RUN chown root:users jmodelica
+RUN cd ~ && svn co https://svn.jmodelica.org/trunk JModelica.org
+RUN cd ~/JModelica.org && mkdir build 
+RUN cd ~/JModelica.org/build && export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64 
+RUN cd ~/JModelica.org/build && ../configure --prefix=/opt/jmodelica --with-ipopt=/opt/ipopt 
+RUN cd ~/JModelica.org/build && make install && make install_casadi
