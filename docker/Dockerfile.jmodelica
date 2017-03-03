@@ -1,11 +1,15 @@
 FROM ubuntu:16.04
+# or 12.04
 
 RUN apt-get -y update
 
-RUN apt-get -y install g++ subversion gfortran ipython cmake swig ant openjdk-8-jdk
+RUN apt-get -y install g++ subversion gfortran ipython cmake swig ant
 RUN apt-get -y install python-dev python-numpy python-scipy python-matplotlib cython
 RUN apt-get -y install python-lxml python-nose python-jpype libblas-dev fort77
 RUN apt-get -y install zlib1g-dev libboost-dev automake autoconf unzip wget
+# if <ubuntu 14.04  use openjdk-6-jdk
+RUN apt-get -y install python-pip openjdk-8-jdk 
+#RUN pip install jcc
 
 # RUN svn co https://svn.jmodelica.org/trunk JModelica.org
 

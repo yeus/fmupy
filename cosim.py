@@ -29,7 +29,8 @@ from scipy import interpolate
 #myfmu = fmu("rosmo_ExternalLibraries.fmu", logging = True)
 #myfmu = fmusim.fmu("FMU/iboss_vti.fmu", logging = True)
 #with fmusim2.fmi("./FMU/efunc.fmu", loggingOn = True) as myfmu:
-myfmu = fmusim2.fmi("./fmu/satcomponents_AOCS_examples_mission_simulation_ideal.fmu", loggingOn = False)
+#myfmu = fmusim2.fmi("./fmu/satcomponents_AOCS_examples_mission_simulation_ideal.fmu", loggingOn = False)
+myfmu = fmusim2.fmi("efunc.fmu", loggingOn = False)
 ##myfmu.printvarprops()
 ##print(myfmu.getOutputNames())
 #names=list(myfmu.getOutputNames().values())

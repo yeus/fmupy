@@ -379,6 +379,7 @@ class fmi(fmu2.FMUInterface):
     pass
 
   def simulate(self,dt=0.01, t_start=0.0, t_end=1.0, varnames=[], inputfs = [], initialize=False, datares = 100):
+    """simulates an fmu with inputfunctions and datares ()"""
     if self.activeFmiType == 'me':
       if self.loggingOn: print("run me-simulation")
       return self.mesimulate(dt, t_start, t_end, varnames, inputfs =  inputfs)

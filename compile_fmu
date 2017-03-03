@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#this scripts compiles an FMU using a docker image from dockerhub
+
+#mechatronics3d/jjmodelica
+
+#docker run --rm -it mclab/jmodelica
+
+#docker run -it -v $HOME:$HOME -v "$PWD":/mythesis -w /mythesis --dns $DNS --name $containername mclab/jmodelica /bin/bash #-c "./startjupyter"
+
+#docker run -it -v $PWD:$PWD -w $PWD mclab/jmodelica /bin/bash #-c "/opt/jmodelica/bin/jm_ipython.sh"
+
+
+BUILDFILE="/home/tom/Dropbox/projects/mokalman/kalman.mo"
+
+
+docker run -it -v $PWD:$PWD -v $HOME:$HOME -w $PWD mclab/jmodelica /bin/bash -c "/opt/jmodelica/bin/jm_python.sh compile_fmu.py $BUILDFILE kalman.system_examples.moving_body"

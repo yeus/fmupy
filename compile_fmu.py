@@ -30,6 +30,9 @@ import types
 # Import the compiler function
 from pymodelica import compile_fmu
 
+import sys
+
+
 #Specify Modelica model and model file (.mo or .mop)
 #mo_file = '../../../model/satcomponents/modelicatests.mo' #satcomponents #buildingblocks
 #model_name = 'modelicatests.constraints_test' #noisetest #sample_test #satcomponents.blocks.noise_sampled
@@ -39,10 +42,15 @@ from pymodelica import compile_fmu
 #model_name = 'ibossmo.buildingblocks.verosim_basic'
 #model_name = 'ibossmo.buildingblocks.examples.verosim_block'
 #model_name = 'ibossmo.components.Examples.interfacecomplete_with_dcdc'
-mo_file = '/home/tom/iboss_sim/model/satcomponents/satcomponents.mo'
-model_name = 'satcomponents.AOCS.examples.mission_simulation_ideal'
+
+#mo_file = '/home/tom/iboss_sim/model/satcomponents/satcomponents.mo'
+#model_name = 'satcomponents.AOCS.examples.mission_simulation_ideal'
+print(sys.argv)
+
 #mo_file = "efunc.mo"
+mo_file = sys.argv[1]
 #model_name = 'efunc'
+model_name = sys.argv[2]
 
 #help:
 #http://www.jmodelica.org/page/27667

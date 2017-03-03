@@ -8,4 +8,4 @@
 # modified:
 #	- 2012 10 25 - Thomas Meschede
 
-__all__ = ["fmupy", "FMUSimulator2"] 
+__all__ = ["fmupy", "FMUSimulator2", "utils"] 
